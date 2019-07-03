@@ -155,7 +155,7 @@ while True:
             message = {}
             message['temperature'] = comp_temp
             message['sequence'] = loopCount
-            message['timestamp_utc'] = datetime.utcnow.strftime("%Y-%m-%dT%H:%M:%S.%fZ")
+            message['timestamp_utc'] = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S.%fZ")
             messageJson = json.dumps(message)
             myAWSIoTMQTTClient.publish(topic, messageJson, 1)
             if args.mode == 'publish':
