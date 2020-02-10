@@ -7,7 +7,14 @@ Created on Mon Jul 01 21:16:05 2019
 
 #!/usr/bin/env python
 
+from AWSIoTPythonSDK.MQTTLib import AWSIoTMQTTClient
+import logging
+import argparse
+import json
+from datetime import datetime
 import time
+
+### Setup for my sensor
 import bme680
 from subprocess import PIPE, Popen
 
@@ -16,13 +23,31 @@ try:
 except ImportError:
     from smbus import SMBus
 
-from AWSIoTPythonSDK.MQTTLib import AWSIoTMQTTClient
-import logging
-import argparse
-import json
-from datetime import datetime
+try:
+    sensor = bme680.BME680(bme680.I2C_ADDR_PRIMARY)
+except IOError:
+    sensor = bme680.BME680(bme680.I2C_ADDR_SECONDARY)
 
-AllowedActions = ['both', 'publish', 'subscribe']
+# These oversampling settings can be tweaked to
+# change the balance between accuracy and noise in
+# the data.
+
+sensor.set_humidity_oversample(bme680.OS_2X)
+sensor.set_pressure_oversample(bme680.OS_4X)
+sensor.set_temperature_oversample(bme680.OS_8X)
+sensor.set_filter(bme680.FILTER_SIZE_3)
+
+# Gets the CPU temperature in degrees C
+def get_cpu_temperature():
+    process = Popen(['vcgencmd', 'measure_temp'], stdout=PIPE)
+    output, _error = process.communicate()
+    return float(output[output.index('=') + 1:output.rindex("'")])
+
+factor = 1.0  # Smaller numbers adjust temp down, vice versa
+smooth_size = 10  # Dampens jitter due to rapid CPU temp changes
+### Sensor stuff done
+
+AllowedActions = ['publish']
 
 # Read in command-line parameters
 parser = argparse.ArgumentParser()
@@ -69,35 +94,6 @@ if not args.useWebsocket and not args.port:  # When no port override for non-Web
     port = 8883
     
 
-
-try:
-    sensor = bme680.BME680(bme680.I2C_ADDR_PRIMARY)
-except IOError:
-    sensor = bme680.BME680(bme680.I2C_ADDR_SECONDARY)
-
-# These oversampling settings can be tweaked to
-# change the balance between accuracy and noise in
-# the data.
-
-sensor.set_humidity_oversample(bme680.OS_2X)
-sensor.set_pressure_oversample(bme680.OS_4X)
-sensor.set_temperature_oversample(bme680.OS_8X)
-sensor.set_filter(bme680.FILTER_SIZE_3)
-
-# Gets the CPU temperature in degrees C
-def get_cpu_temperature():
-    process = Popen(['vcgencmd', 'measure_temp'], stdout=PIPE)
-    output, _error = process.communicate()
-    return float(output[output.index('=') + 1:output.rindex("'")])
-
-# Custom MQTT message callback
-def customCallback(client, userdata, message):
-    print("Received a new message: ")
-    print(message.payload)
-    print("from topic: ")
-    print(message.topic)
-    print("--------------\n\n")
-
 # Configure logging
 logger = logging.getLogger("AWSIoTPythonSDK.core")
 logger.setLevel(logging.DEBUG)
@@ -126,19 +122,15 @@ myAWSIoTMQTTClient.configureMQTTOperationTimeout(5)  # 5 sec
 
 # Connect and subscribe to AWS IoT
 myAWSIoTMQTTClient.connect()
-if args.mode == 'both' or args.mode == 'subscribe':
-    myAWSIoTMQTTClient.subscribe(topic, 1, customCallback)
 time.sleep(2)
 
-factor = 1.0  # Smaller numbers adjust temp down, vice versa
-smooth_size = 10  # Dampens jitter due to rapid CPU temp changes
-
-cpu_temps = []
-
 # Publish to the same topic in a loop forever
+cpu_temps = []
 loopCount = 0
 while True:
     if sensor.get_sensor_data():
+        # This is all about getting the temperature from my sensor
+        #  compensating for the fact that I put it next to the CPU
         cpu_temp = get_cpu_temperature()
         cpu_temps.append(cpu_temp)
 
@@ -151,14 +143,14 @@ while True:
 
         print("Compensated temperature: {:05.2f} *C".format(comp_temp))
 
-        if args.mode == 'both' or args.mode == 'publish':
+        # This is the actual publishing to AWS
+        if args.mode == 'publish':
             message = {}
             message['temperature'] = comp_temp
             message['sequence'] = loopCount
             message['timestamp_utc'] = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S.%fZ")
             messageJson = json.dumps(message)
             myAWSIoTMQTTClient.publish(topic, messageJson, 1)
-            if args.mode == 'publish':
-                print('Published topic %s: %s\n' % (topic, messageJson))
+            print('Published topic %s: %s\n' % (topic, messageJson))
             loopCount += 1
     time.sleep(1)

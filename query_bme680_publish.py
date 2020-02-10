@@ -5,7 +5,6 @@
 # * https://github.com/pimoroni/bme680-python/blob/master/examples/temperature-pressure-humidity.py
 # */
 
-
 import os
 import sys
 import time
@@ -17,6 +16,8 @@ from AWSIoTPythonSDK.core.greengrass.discovery.providers import DiscoveryInfoPro
 from AWSIoTPythonSDK.core.protocol.connection.cores import ProgressiveBackOffCore
 from AWSIoTPythonSDK.MQTTLib import AWSIoTMQTTClient
 from AWSIoTPythonSDK.exception.AWSIoTExceptions import DiscoveryInvalidRequestException
+
+### Setup for my particular sensor
 import bme680
 import smbus2
 try:
@@ -24,6 +25,12 @@ try:
 except IOError:
     sensor = bme680.BME680(bme680.I2C_ADDR_SECONDARY,smbus2.SMBus(1))
 
+sensor.set_humidity_oversample(bme680.OS_2X)
+sensor.set_pressure_oversample(bme680.OS_4X)
+sensor.set_temperature_oversample(bme680.OS_8X)
+sensor.set_filter(bme680.FILTER_SIZE_3)
+### Sensor stuff done	
+	
 MAX_DISCOVERY_RETRIES = 10
 GROUP_CA_PATH = "./groupCA/"
 
@@ -59,15 +66,6 @@ if not os.path.isfile(certificatePath):
 if not os.path.isfile(privateKeyPath):
     parser.error("No private key found at {}".format(privateKeyPath))
     exit(3)
-
-# These oversampling settings can be tweaked to
-# change the balance between accuracy and noise in
-# the data.
-
-sensor.set_humidity_oversample(bme680.OS_2X)
-sensor.set_pressure_oversample(bme680.OS_4X)
-sensor.set_temperature_oversample(bme680.OS_8X)
-sensor.set_filter(bme680.FILTER_SIZE_3)
 
 # Configure logging
 logger = logging.getLogger("AWSIoTPythonSDK.core")
