@@ -62,4 +62,4 @@ and when unsuccessful
 ```
 ### Quality of Service (QoS)
 The messages are published to AWS using the MQTT protocol. This is a protocol commonly used in manufacturing systems, and is documented [online](http://mqtt.org/documentation "MQTT documentation"). You can also read about the [AWS flavour](https://docs.aws.amazon.com/iot/latest/developerguide/mqtt.html "AWS MQTT Documentation") of MQTT.<br>
-As for Quality of Service (QoS), it is a flag specifying what happens when messages get lost in the network. The AWS flavour of MQTT accepts two 
+As for Quality of Service (QoS), it is a flag specifying what happens when messages get lost in the network. The AWS flavour of MQTT accepts two QoS flags, 0 means that the message is delivered 'at most once'. 1 means that the message is delivered 'at least once'. So for QoS 0 the publisher will send the message once and then forget about it. If it does not get delivered, it is lost. For QoS, however, the message is sent, and the publisher then waits for a reply from the receiver before forgetting the message, and resends if neccessary. This ensures that the receiver gets the message at least once.
