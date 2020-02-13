@@ -130,3 +130,15 @@ while True:
     time.sleep(1)
 ```
 The script [simple_publishing.py](https://github.com/AnHosu/iot_poc/blob/master/simple_publishing.py) is a full working example using the BME680 sensor. I can be called as follows
+```bash
+python simple_publishing.py -e <your aws iot endpoint> -r <path to CA certificate folder> -c <file containing device certificate> -k <file containing private key> -i <a client ID> -t <the topic to publish to>
+```
+# Running the Case
+Running this script on a Pi with the BME680 sensor, when it is working, it should look like this
+```
+
+```
+But the most interesting part, of course, is whether the data gets to AWS. Let us say that we published to the topic `BME680/temperature`. We can open the AWS Console, go to IoT Core, and find the Test tab. Here we can subscribe to a topic. When I type in the topic `BME680/temperature`, I get the messages sent from the Pi.<br>
+From here the messages can be redirected to whereever you want using AWS SNS, for instance to AWS Kinesis.
+# Application
+In real life would you fire up a Raspberry PI running Python just to extract and publish data from a single sensor? No, probably not. In a real life setting, if you just wanted to publish data from a single sensor, you might use a microcontroller instead. 
