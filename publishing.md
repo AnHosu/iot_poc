@@ -129,4 +129,4 @@ while True:
     loopCount += 1
     time.sleep(1)
 ```
-I have also got a full working example using the BME680 sensor.
+The script [simple_publishing.py](https://github.com/AnHosu/iot_poc/blob/master/simple_publishing.py) is a full working example using the BME680 sensor. I can be called as follows
