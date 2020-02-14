@@ -2,7 +2,7 @@
 In this tutorial we will obtain a value from a sensor and publish it to a topic on AWS. No added shenanigans; this is as simple as it gets.
 
 # Registering the Sensor in IoT Core
-
+Before we can start connecting a sensor to AWS, we need to register the sensor or system as a so-called Thing in AWS IoT Core. The docs have a [getting started guide](https://docs.aws.amazon.com/iot/latest/developerguide/register-device.html "AWS IoT docs") 
 # Setting up the SDK
 
 # Scripting
