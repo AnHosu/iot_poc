@@ -182,9 +182,9 @@ Compensated temperature: 21.58 *C
 Published topic bme680/temperature: {"status": "success", "timestamp_utc": "2020-02-15T16:43:18.519356Z", "value": 21.57999999999999, "sequence": 27}
 ```
 But the most interesting part, of course, is whether the data gets to AWS. Let us say that we published to the topic `BME680/temperature`. We can open the AWS Console, go to IoT Core, and find the Test tab. Here we can subscribe to a topic. When I type in the topic `BME680/temperature`, 
-![test client](images/aws_iot_test_simple_publish.png)
+![test client](https://github.com/AnHosu/iot_poc/blob/master/images/aws_iot_test_simple_publish.PNG)
 I get the messages sent from the Pi.
-![test client](images/aws_iot_message_simple_publish.png)
+![test client](https://github.com/AnHosu/iot_poc/blob/master/images/aws_iot_message_simple_publish.PNG)
 Congratulations, you are now publishing to AWS IoT! From here the messages can be redirected to whereever you want using AWS SNS, for instance to AWS Kinesis.<br>
 # Application
 In real life would you fire up a Raspberry PI running Python just to extract and publish data from a single sensor? No, probably not. In a real life setting, if you just wanted to publish data from a single sensor, you might use a microcontroller instead.
