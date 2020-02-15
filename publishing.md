@@ -1,13 +1,6 @@
 # Publishing to AWS
-In this tutorial we will obtain a value from a sensor and publish it to a topic on AWS. No added shenanigans; this is as simple as it gets.
-
-# Registering the Sensor in IoT Core
-Before we can start connecting a sensor to AWS, we need to register the sensor or system as a so-called Thing in AWS IoT Core. The docs have a [getting started guide](https://docs.aws.amazon.com/iot/latest/developerguide/register-device.html "AWS IoT docs") 
-# Setting up the SDK
-
-# Scripting
-It is finally time to code. Let us review what we are trying to do.
-At the core of it we want to grab a reading from the sensor, wrap it in a message with some useful metadata, and publish that to AWS IoT. We will want to do that continuosly on a loop, meaning that our script should end up being structured as follows.<br>
+In this tutorial we will obtain a value from a sensor and publish it to a topic on AWS. No added shenanigans; this is as simple as it gets.<br>
+At the core of it, we want to grab a reading from the sensor, wrap it in a message with some useful metadata, and publish that to AWS IoT. We will want to do that continuosly on a loop, meaning that our script should end up being structured as follows.<br>
 ```
 Prepare the sensor
 Set up connection to AWS
@@ -16,8 +9,50 @@ while true
     pack it up
     publish it
 ```
-I will not elaborate on the sensort setup here, but if you are interested in the BME680 sensor, I will happily do a seperate tutorial. For now, let us focus on the connection and publishing parts.<br>
-## Publishing to AWS IoT
+I will not elaborate on the sensort setup here, but if you are interested in the BME680 sensor, I will happily do a seperate tutorial.
+# Registering the Sensor in IoT Core
+Before we can start connecting a sensor to AWS, we need to register the sensor or system as a so-called Thing in AWS IoT Core. The docs have a [getting started guide](https://docs.aws.amazon.com/iot/latest/developerguide/register-device.html "AWS IoT docs") which is pretty good. Follow the guide, but at the end of it, make sure you have the following:
+* A device certificate file
+* A private key file
+* The root certificate file
+* In the policy you attached to the certificate, you have allowed publishing from an ID and to a topic that you can remember
+
+The three files should be installed on the controller device. In this case, that just means the files should be in accessible place on the Raspberry Pi. The ID will be used as clientID for the client that we will use to connect to AWS IoT in a little later, and the topic is a flag that helps you direct data along the right path. Both are explained in detail below.<br>
+The policy used for examples in this case, follows this pattern:
+```json
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": [
+        "iot:Publish",
+        "iot:Receive"
+      ],
+      "Resource": [
+        "arn:aws:iot:your-region:your-aws-account:topic/bme680/temperature"
+      ]
+    },
+    {
+      "Effect": "Allow",
+      "Action": [
+        "iot:Connect"
+      ],
+      "Resource": [
+        "arn:aws:iot:your-region:your-aws-account:client/simple-publishing"
+      ]
+    }
+  ]
+}
+```
+# Setting up the SDK
+We will do scripting for this case using Python. AWS IoT currently has two SDKs for Python. For this case we will use version 1, which is easily installed using pip:
+```bash
+pip install AWSIoTPythonSDK
+```
+The AWS IoT code below should work for any version of Python, but the interaction with the BME680 sensor is written with Python 3.7.
+# Publishing to AWS IoT
+Now we are ready to get started on developing with the SDK.<br>
 Publishing a message to AWS using the Python SDK will look something like this
 ```python
 AWSIoTMQTTClient.publish(topic, messageJSON, 1)
@@ -37,6 +72,7 @@ and then have another sensor on the same line publish to
 factoryA/line22/milling/torque
 ```
 That way you can direct these messages to the store or dashboard for the same line but seperate lambdas, if that is needed for your application.<br>
+An IoT thing needs permission to publish to a specific topic. This is done by adding a certificate with a permissive policy to the thing. By using the topic naming convention above and wildcards in the policy, you can create hierarchies and differentiated permissions for things in different parts of your application or factory setup.<br>
 Now, for this demonstration example, we only have four sensors, and really we will only use one of them, so we will go with a simple topic. Like, say,
 ```
 bme680/temperature
@@ -56,7 +92,7 @@ The message is where you have the actual data point along with any metadata. It 
 The messages are published to AWS using the MQTT protocol. This is a protocol commonly used in manufacturing systems, and is documented [online](http://mqtt.org/documentation "MQTT documentation"). You can also read about the [AWS flavour](https://docs.aws.amazon.com/iot/latest/developerguide/mqtt.html "AWS MQTT Documentation") of MQTT.<br>
 As for Quality of Service (QoS), it is a flag specifying what happens when messages get lost in the network. The AWS flavour of MQTT accepts two QoS flags, 0 means that the message is delivered 'at most once'. 1 means that the message is delivered 'at least once'. So for QoS 0 the publisher will send the message once and then forget about it. If it does not get delivered, it is lost. For QoS, however, the message is sent, and the publisher then waits for a reply from the receiver before forgetting the message, and resends if neccessary. This ensures that the receiver gets the message at least once.<br>
 Now, there are cases where QoS=0 is sufficient, but for this case we will use QoS=1.
-## Connecting to AWS IoT
+# Connecting to AWS IoT
 Before we can publish a message, we need to set up and configure the connection to AWS IoT. For this, we are going to need many small bits of information. Let us start by setting up the client.
 ```python
 from AWSIoTPythonSDK.MQTTLib import AWSIoTMQTTClient
@@ -64,13 +100,13 @@ from AWSIoTPythonSDK.MQTTLib import AWSIoTMQTTClient
 myAWSIoTMQTTClient = AWSIoTMQTTClient(clientId)
 
 ```
-First of all, we are giving our client a client ID. This ID is used by the message broker to recognise the specific client or application that it is communicating with. This is especially importtant when we start subscribing to topics as well. For now, just provide a unique string.<br>
+First of all, we are giving our client a client ID. This ID is used by the message broker to recognise the specific client or application that it is communicating with. This is especially importtant when we start subscribing to topics as well. For now, just provide an ID allowed by the policy made earlier.<br>
 Next up we will setup the networking specifics.
 ```python
 myAWSIoTMQTTClient.configureEndpoint(host, port)
 myAWSIoTMQTTClient.configureCredentials(rootCAPath, privateKeyPath, certificatePath)
 ```
-We are specifying where the MQTT messages are going and how they are authenticated. The host is your AWS IoT custom endpoint which you can find in the AWS Console under IoT Core > Settings. As for the port we will use the default 8883 for MQTT with the X.509 client certificate. Bringing us to the next order of business; certificates. The certificates are the ones you downloaded to your device earlier. You simply provide strings with the paths to each of these certificates; first the CA certificate folder, the private key file, and finally the device certificate file.<br>
+We are specifying where the MQTT messages are going and how they are authenticated. The host is your AWS IoT custom endpoint which you can find in the AWS Console under IoT Core > Settings. As for the port we will use the default 8883 for MQTT with the X.509 client certificate. Bringing us to the next order of business; certificates. The certificates are the ones you downloaded to your device earlier. You simply provide strings with the paths to each of these certificates; the root certificate file, the private key file, and finally the device certificate file.<br>
 Next, we configure what happens when connection between the client and the broker on AWS IoT is lost.
 ```python
 # AWSIoTMQTTClient connection configuration
@@ -90,7 +126,7 @@ Now, all that remains is to attempt the connection.
 # Connect to AWS IoT
 myAWSIoTMQTTClient.connect()
 ```
-## Bringing it all together
+# Bringing it all together
 Here is our bare-bones script for connecting and publishing to AWS IoT. 
 ```python
 from AWSIoTPythonSDK.MQTTLib import AWSIoTMQTTClient
@@ -131,14 +167,24 @@ while True:
 ```
 The script [simple_publishing.py](https://github.com/AnHosu/iot_poc/blob/master/simple_publishing.py) is a full working example using the BME680 sensor. I can be called as follows
 ```bash
-python simple_publishing.py -e <your aws iot endpoint> -r <path to CA certificate folder> -c <file containing device certificate> -k <file containing private key> -i <a client ID> -t <the topic to publish to>
+python simple_publishing.py -e <your aws iot endpoint> -r <file containing root certificate> -c <file containing device certificate> -k <file containing private key> -id <a client ID> -t <the topic to publish to>
 ```
 # Running the Case
 Running this script on a Pi with the BME680 sensor, when it is working, it should look like this
 ```
+Compensated temperature: 21.58 *C
+Published topic bme680/temperature: {"status": "success", "timestamp_utc": "2020-02-15T16:43:16.226983Z", "value": 21.57999999999999, "sequence": 25}
 
+Compensated temperature: 21.58 *C
+Published topic bme680/temperature: {"status": "success", "timestamp_utc": "2020-02-15T16:43:17.348050Z", "value": 21.57999999999999, "sequence": 26}
+
+Compensated temperature: 21.58 *C
+Published topic bme680/temperature: {"status": "success", "timestamp_utc": "2020-02-15T16:43:18.519356Z", "value": 21.57999999999999, "sequence": 27}
 ```
-But the most interesting part, of course, is whether the data gets to AWS. Let us say that we published to the topic `BME680/temperature`. We can open the AWS Console, go to IoT Core, and find the Test tab. Here we can subscribe to a topic. When I type in the topic `BME680/temperature`, I get the messages sent from the Pi.<br>
-From here the messages can be redirected to whereever you want using AWS SNS, for instance to AWS Kinesis.
+But the most interesting part, of course, is whether the data gets to AWS. Let us say that we published to the topic `BME680/temperature`. We can open the AWS Console, go to IoT Core, and find the Test tab. Here we can subscribe to a topic. When I type in the topic `BME680/temperature`, 
+![test client](images/aws_iot_test_simple_publish.png)
+I get the messages sent from the Pi.
+![test client](images/aws_iot_message_simple_publish.png)
+Congratulations, you are now publishing to AWS IoT! From here the messages can be redirected to whereever you want using AWS SNS, for instance to AWS Kinesis.<br>
 # Application
-In real life would you fire up a Raspberry PI running Python just to extract and publish data from a single sensor? No, probably not. In a real life setting, if you just wanted to publish data from a single sensor, you might use a microcontroller instead. 
+In real life would you fire up a Raspberry PI running Python just to extract and publish data from a single sensor? No, probably not. In a real life setting, if you just wanted to publish data from a single sensor, you might use a microcontroller instead.
