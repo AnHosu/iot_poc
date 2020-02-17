@@ -18,17 +18,25 @@ AWS offers multiple ways to ingest and store data, but for sensor data it especi
 * Shadows
 * SDK
 # The Hardware Setup
-It would not be IoT without at least one IoT device. For this demonstration I have been using a Raspberry Pi 3 Model B+ along with a Bosch BME680 sensor on a [breakout](https://shop.pimoroni.com/products/bme680-breakout "Pimoroni BME680 breakout"). Any sensor would do, but I like this one and this particular breakout beacause it has a nice [library](https://github.com/pimoroni/bme680-python "Pimoroni BME680 library") which allows us to reduce the amount of code we need to query our sensor to a minimum. Furthermore, this particular sensor has four different components, allowing us to measure temperature, pressure, humidity, and, with a bit of additional work, air quality. I will not elaborate too much on this particular sensor equipment for this demonstration and I will try to be clear about when you can replace my code with that querying your particular sensor.<br><br>
-We are going to do four different pipelines in total. Hardware-wise everything will be the same throughout the cases: BME680 connected to the Pi which in turn is connected to the internet via wifi. If you are using the same breakout, take a look at [this tutorial](https://learn.pimoroni.com/tutorial/sandyj/getting-started-with-bme680-breakout "BME680 tutorial") to set it up.
+It would not be IoT without at least one IoT device. For this demonstration I have been using a Raspberry Pi 3 Model B+ along with a Bosch BME680 sensor on a [breakout](https://shop.pimoroni.com/products/bme680-breakout "Pimoroni BME680 breakout"). Any sensor would do, but I like this one and this particular breakout beacause it has a nice [library](https://github.com/pimoroni/bme680-python "Pimoroni BME680 library") which allows us to reduce the amount of code we need to query our sensor to a minimum. Furthermore, this particular sensor has four different components, allowing us to measure temperature, pressure, humidity, and, with a bit of additional work, air quality. I will not elaborate too much on this particular sensor equipment for this demonstration and I will try to be clear about when you can replace my code with that querying your particular sensor.<br>
+In IoT terms the sensor is the 'thing' or 'device', and our Rasoberry Pi is the 'edge' or 'gateway device'. Names are not too important and, in real life, you would use different hardware for different situations.<br><br>
+We are going to do four different cases in total. Hardware-wise everything will be the same throughout; BME680 connected to the Pi which in turn is connected to the internet. If you are using the same breakout, take a look at [this tutorial](https://learn.pimoroni.com/tutorial/sandyj/getting-started-with-bme680-breakout "BME680 tutorial") to set it up.
 # Cases
 ## 1) Connecting a Thing to AWS IoT
 The simplest way to do IoT with AWS. We will register our sensor as a thing in AWS IoT Core and will be using the AWS IoT Python SDK to publish sensor readings to a topic.<br>
-In this case the Raspberry is simply simulating a microcontroller that will query the sensor and publish the result.
+In this case the Raspberry is simply simulating a microcontroller that will query the sensor and publish the result.<br><br>
+[Get started here.](https://github.com/AnHosu/iot_poc/blob/master/publishing.md "simple publishing case")
+Here is the full [example script](https://github.com/AnHosu/iot_poc/blob/master/simple_publishing.py "simple publishing example").
 ## 2) Using Thing Shadows
-Using the Thing Shadow feature of AWS IoT to store a twin/shadow of the device in the cloud and update it whenever a new reading is available.
+Using the Thing Shadow feature of AWS IoT to store a twin/shadow of the device in the cloud and update it whenever a new reading is available.<br>
+In this case the Raspberry is simply simulating a microcontroller that will query the sensor and publish the result.<br><br>
+This case is still under construction.
 ## 3) Publish and Subscribe
-We are building a setup where our device will not just send data but also respond to messages sent to it.
+We are building a setup where our device will not just send data but also respond to messages sent to it.<br><br>
+This case is still under construction, but here is the [example script](https://github.com/AnHosu/iot_poc/blob/master/simple_pubsub.py "simple pubsub example") so far.
 ## 4) Connecting Things through AWS Greengrass
-Now our Pi will act the part of gateway device. The gateway device is where edge calculations will happen. This could be signal processing, edge analytics, or even machine learning models. Greengrass is the AWS offering for gateway devices.
+Now our Pi will act the part of gateway device. The gateway device is where edge calculations will happen. This could be signal processing, edge analytics, or even machine learning models. Greengrass is the AWS offering for gateway devices.<br><br>
+This case is still under construction, but here is the [example script](https://github.com/AnHosu/iot_poc/blob/master/greengrass_thing.py "simple greengrass example") so far.
 ## 5) Shadows, Greengrass, and ML Models
-We will combine everything and finally deploy a machine learning model to our "edge".
+We will combine everything and finally deploy a machine learning model to our "edge".<br><br>
+This case is still under construction.

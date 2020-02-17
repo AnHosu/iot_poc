@@ -1,11 +1,11 @@
-# -*- coding: utf-8 -*-
 """
 Created on Wed Nov 12 07:30:05 2020
-
 @author: AnHosu
-"""
 
-#!/usr/bin/env python
+This simple example of publishing to AWS IoT with is to be used 
+ along with the tutorial at:
+ https://github.com/AnHosu/iot_poc/blob/master/simple_publishing.py
+"""
 
 from AWSIoTPythonSDK.MQTTLib import AWSIoTMQTTClient
 import argparse
@@ -52,8 +52,7 @@ parser.add_argument("-e", "--endpoint", action="store", required=True, dest="hos
 parser.add_argument("-r", "--rootCA", action="store", required=True, dest="rootCAPath", help="Root CA file path")
 parser.add_argument("-c", "--cert", action="store", dest="certificatePath", help="Certificate file path")
 parser.add_argument("-k", "--key", action="store", dest="privateKeyPath", help="Private key file path")
-parser.add_argument("-id", "--clientId", action="store", dest="clientId", default="basicPubSub",
-                    help="Targeted client id")
+parser.add_argument("-id", "--clientId", action="store", dest="clientId", default="basicPubSub", help="Targeted client id")
 parser.add_argument("-t", "--topic", action="store", dest="topic", default="sdk/test/Python", help="Targeted topic")
 
 args = parser.parse_args()
