@@ -98,7 +98,6 @@ Before we can publish a message, we need to set up and configure the connection 
 from AWSIoTPythonSDK.MQTTLib import AWSIoTMQTTClient
 # Init AWSIoTMQTTClient
 myAWSIoTMQTTClient = AWSIoTMQTTClient(clientId)
-
 ```
 First of all, we are giving our client a client ID. This ID is used by the message broker to recognise the specific client or application that it is communicating with. This is especially importtant when we start subscribing to topics as well. For now, just provide an ID allowed by the policy made earlier.<br>
 Next up we will setup the networking specifics.
@@ -187,4 +186,5 @@ I get the messages sent from the Pi.
 ![test client](https://github.com/AnHosu/iot_poc/blob/master/images/aws_iot_message_simple_publish.PNG)
 Congratulations, you are now publishing to AWS IoT! From here the messages can be redirected to whereever you want using AWS SNS, for instance to AWS Kinesis.<br>
 # Application
-In real life would you fire up a Raspberry PI running Python just to extract and publish data from a single sensor? No, probably not. In a real life setting, if you just wanted to publish data from a single sensor, you might use a microcontroller instead.
+In real life would you fire up a Raspberry PI running Python just to extract and publish data from a single sensor? No, probably not. In a real life setting, if you just wanted to publish data from a single sensor, you might use a microcontroller instead.<br>
+On the other hand, if you have hundreds of sensors that you want to query and publish, a Raspberry Pi will not be enough. Instead you might want to use a proper gateway device, like CloudRail along with ethernet modules like IO-Link.
