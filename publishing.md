@@ -9,7 +9,7 @@ while true
     pack it up
     publish it
 ```
-I will not elaborate on the sensort setup here, but if you are interested in the BME680 sensor, I will happily do a seperate tutorial.
+I will not elaborate too much on the sensor setup here, but we will be using the Bosch BME680 air quality sensor. The BME680 does four different measurements, but for this case we will only be measuring and publishing the temperature.
 # Registering the Sensor in IoT Core
 Before we can start connecting a sensor to AWS, we need to register the sensor or system as a so-called Thing in AWS IoT Core. The docs have a [getting started guide](https://docs.aws.amazon.com/iot/latest/developerguide/register-device.html "AWS IoT docs") which is pretty good. Follow the guide, but at the end of it, make sure you have the following:
 * A device certificate file
@@ -71,7 +71,7 @@ and then have another sensor on the same line publish to
 ```
 factoryA/line22/milling/torque
 ```
-That way you can direct these messages to the store or dashboard for the same line but seperate lambdas, if that is needed for your application.<br>
+That way you can direct these messages to the store or dashboard for the same line but seperate lambda functions, if that is needed for your application.<br>
 An IoT thing needs permission to publish to a specific topic. This is done by adding a certificate with a permissive policy to the thing. By using the topic naming convention above and wildcards in the policy, you can create hierarchies and differentiated permissions for things in different parts of your application or factory setup.<br>
 Now, for this demonstration example, we only have four sensors, and really we will only use one of them, so we will go with a simple topic. Like, say,
 ```
