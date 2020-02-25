@@ -62,4 +62,17 @@ def callback_function(client, userdata, message):
     print("Received a new message:\n{0}".format(message.payload))
     print("from topic:\n{0}".format(message.topic))
 ```
-In the next section, we will use this function to do cool things.
+In the next section, we will use this function to do cool things.<br>
+The subscription can be set up as soon as connection between the client and AWS IoT is established. The client will then listen for any published messages for as long as it lives or until the subscription is terminated. This also means that we do not have to listen in an infinite loop like we were publishing in an infinite loop earlier.
+# A Subscription Example
+Now we are ready to put together an example with using subscription. In the previous case we were getting temperature readings from the BME680 sensor and published them to AWS IoT on an infinite loop. However, the BME680 sensor is also able to measure relative humidity and air pressure. In real life you would want to use this expensive sensor to measure all three at once, but for this case we are going to build a way for us to remotely toggle between measuring these three variables. We will set up a subsription that listens to commands published on a specific topic. We will then use the content of that message to change which variable is measured and published by the device and sensor.<br>
+First we will choose our topics. We will publish on three different topics depending on the variable that we are measuring.
+```
+bme680/temperature
+bme680/pressure
+bme680/humidity
+```
+In addition to this, we will reserve a topic for publishing actions to our device.
+```
+bme680/action
+```
