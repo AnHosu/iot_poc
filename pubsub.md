@@ -13,7 +13,7 @@ while true
 ```
 The lines marked with an asterisk*, are new additions and are covered in this tutorial. The rest are covered in the [previous](https://github.com/AnHosu/iot_poc/blob/master/publishing.md "simple publishing") tutorial.
 # Registering the Sensor in IoT Core
-Just as it is the 
+Just as it is the case with publishing, we need to register the device that will subscribe to messages. We can use the same Thing and certificate as before, but we need to change the policy to allow subscription through using that certificate. This is accomplished by adding an additional statement to the policy allowing the action iot:Subscribe and providing the topic(s) to subscribe from. Here is an example of such a policy document.
 ```json
 {
   "Version": "2012-10-17",
@@ -34,7 +34,7 @@ Just as it is the
         "iot:Subscribe"
       ],
       "Resource": [
-        "arn:aws:iot:your-region:your-aws-account:topicfilter/sdk/test/java"
+        "arn:aws:iot:your-region:your-aws-account:topicfilter/bme680/actions"
       ]
     },
     {
@@ -50,7 +50,7 @@ Just as it is the
 }
 ```
 # Subscribing to Topics
-Subscribing to a topic [docs](https://s3.amazonaws.com/aws-iot-device-sdk-python-docs/sphinx/html/index.html#AWSIoTPythonSDK.MQTTLib.AWSIoTMQTTClient.subscribe "subscribe docs")
+Like publishing, subscribing can be done with just one line of code. We just need to call the [.subscribe()](https://s3.amazonaws.com/aws-iot-device-sdk-python-docs/sphinx/html/index.html#AWSIoTPythonSDK.MQTTLib.AWSIoTMQTTClient.subscribe "subscribe docs") function of the IoT client.
 ```python
 AWSIoTMQTTClient.subscribe(topic, 1, callback)
 ```
