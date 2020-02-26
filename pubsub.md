@@ -25,7 +25,9 @@ Just as it is the case with publishing, we need to register the device that will
         "iot:Receive"
       ],
       "Resource": [
-        "arn:aws:iot:your-region:your-aws-account:topic/bme680/temperature"
+        "arn:aws:iot:your-region:your-aws-account:topic/bme680/temperature",
+        "arn:aws:iot:your-region:your-aws-account:topic/bme680/pressure",
+        "arn:aws:iot:your-region:your-aws-account:topic/bme680/humidity"
       ]
     },
     {
@@ -94,9 +96,18 @@ AWSIoTMQTTClient.subscribe(topic, 1, callback)
 while True:
     time.sleep(5)
 ```
-A full working example can be found here.
+A full working example can be found [here](https://github.com/AnHosu/iot_poc/blob/master/simple_subscribing.py "simple subscribing example"). We run the script from a terminal on the Pi:
+```bash
+python simple_subscribing.py -e <your aws iot endpoint> -r <file containing root certificate> -c <file containing device certificate> -k <file containing private key> -id <a client ID> -t <the topic to subscribe to>
+```
+Nothing happens before we start publishing messages to our topic of choice. I ran the example on my Pi, using the topic `/bme680/actions`. I then moved to the test suite at AWS IoT Core > Test, and published a message to that topic.<br>
+![test client](https://github.com/AnHosu/iot_poc/blob/master/images/aws_iot_test_simple_subscribe.PNG)<br>
+The console output on the Pi then looks like this:
+```
+
+```
 # A Subscription Example
-Now we are ready to put together an example with using subscription. In the previous case we were getting temperature readings from the BME680 sensor and published them to AWS IoT on an infinite loop. However, the BME680 sensor is also able to measure relative humidity and air pressure. In real life you would want to use this expensive sensor to measure all three at once, but for this case we are going to build a way for us to remotely toggle between measuring these three variables. We will set up a subsription that listens to commands published on a specific topic. We will then use the content of that message to change which variable is measured and published by the device and sensor.<br>
+Now we are ready to put together an example using subscription and publishing. In the previous case we were getting temperature readings from the BME680 sensor and published them to AWS IoT on an infinite loop. However, the BME680 sensor is also able to measure relative humidity and air pressure. In real life you would want to use this expensive sensor to measure all three at once, but for this case we are going to build a way for us to remotely toggle between measuring these three variables. We will set up a subsription that listens to commands published on a specific topic. We will then use the content of that message to change which variable is measured and published by the device and sensor.<br>
 First we will choose our topics. We will publish on three different topics depending on the variable that we are measuring.
 ```
 bme680/temperature
