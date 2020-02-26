@@ -138,6 +138,8 @@ topic = None
 variable = None
 def callback_function(client, userdata, message):
     payload = json.loads(message.payload)
+    global pubtopic
+    global variable
     if "action" not in payload:
         topic = None
         variable = None
@@ -191,3 +193,4 @@ while True:
         myAWSIoTMQTTClient.publish(topic, messageJson, 1)
         print('Published topic %s: %s\n' % (topic, messageJson))
 ```
+The whole script is [here](https://github.com/AnHosu/iot_poc/blob/master/simple_pubsub.py "simple pubsub example"). When run, it will start to listen to the topic subscibed to. Once it receives a message with instructions it will start querying the sensor as instructed and publish. This way we can toggle between different sensors and even shut off messages when we do not need them and save some money.
