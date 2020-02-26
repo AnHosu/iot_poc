@@ -58,5 +58,4 @@ myAWSIoTMQTTClient.subscribe(topic, 1, callback_function)
 
 # Wait for messages to arrive
 while True:
-    myAWSIoTMQTTClient.publish(topic,"I am alive",1)
     time.sleep(5)
