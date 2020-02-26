@@ -54,8 +54,9 @@ def callback_function(client, userdata, message):
     print("from topic:\n{0}".format(message.topic))
 
 # Subscribe
-myAWSIoTMQTTClient.subscribe(topic, 0, callback_function)
+myAWSIoTMQTTClient.subscribe(topic, 1, callback_function)
 
 # Wait for messages to arrive
 while True:
+    myAWSIoTMQTTClient.publish(topic,"I am alive",1)
     time.sleep(5)
