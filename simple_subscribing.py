@@ -4,7 +4,7 @@ Created on Wed Feb 26 08:39:51 2020
 
 This simple example of subscribing to topics from AWS IoT with is to be used 
  along with the tutorial at:
- 
+ https://github.com/AnHosu/iot_poc/blob/master/pubsub.md
 """
 from AWSIoTPythonSDK.MQTTLib import AWSIoTMQTTClient
 import argparse

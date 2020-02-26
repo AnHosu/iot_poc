@@ -27,7 +27,8 @@ Just as it is the case with publishing, we need to register the device that will
       "Resource": [
         "arn:aws:iot:your-region:your-aws-account:topic/bme680/temperature",
         "arn:aws:iot:your-region:your-aws-account:topic/bme680/pressure",
-        "arn:aws:iot:your-region:your-aws-account:topic/bme680/humidity"
+        "arn:aws:iot:your-region:your-aws-account:topic/bme680/humidity",
+        "arn:aws:iot:your-region:your-aws-account:topicfilter/bme680/actions"
       ]
     },
     {
@@ -45,12 +46,13 @@ Just as it is the case with publishing, we need to register the device that will
         "iot:Connect"
       ],
       "Resource": [
-        "arn:aws:iot:your-region:your-aws-account:client/simple-publishing"
+        "arn:aws:iot:your-region:your-aws-account:client/simple-subscribing"
       ]
     }
   ]
 }
 ```
+This is the policy document we will use for the following example. One thing to note is that the topic we are allowing subscription, `bme680/action`, we are also allowing publishing to. This allows us to test the subscription using the AWS IoT Console without introducing additional devices and certificates.
 # Subscribing to Topics
 Like publishing, subscribing can be done with just one line of code. We just need to call the [.subscribe()](https://s3.amazonaws.com/aws-iot-device-sdk-python-docs/sphinx/html/index.html#AWSIoTPythonSDK.MQTTLib.AWSIoTMQTTClient.subscribe "subscribe docs") function of the IoT client.
 ```python
@@ -104,10 +106,16 @@ Nothing happens before we start publishing messages to our topic of choice. I ra
 ![test client](https://github.com/AnHosu/iot_poc/blob/master/images/aws_iot_test_simple_subscribe.PNG)<br>
 The console output on the Pi then looks like this:
 ```
-
+Received a new message:
+{
+    "message": "Hello from AWS IoT Console"
+}
+from topic:
+bme680/action
 ```
+Congratulations! You now know how to subscribe to a topic using the AWS IoT Python SDK. The real power of subscription, however, lies in combining it with publishing. In the next section, we will build a small example of how to use subscription with publishing to great effect.
 # A Subscription Example
-Now we are ready to put together an example using subscription and publishing. In the previous case we were getting temperature readings from the BME680 sensor and published them to AWS IoT on an infinite loop. However, the BME680 sensor is also able to measure relative humidity and air pressure. In real life you would want to use this expensive sensor to measure all three at once, but for this case we are going to build a way for us to remotely toggle between measuring these three variables. We will set up a subsription that listens to commands published on a specific topic. We will then use the content of that message to change which variable is measured and published by the device and sensor.<br>
+In the case of simple publishing we were getting temperature readings from the BME680 sensor and published them to AWS IoT on an infinite loop. However, the BME680 sensor is also able to measure relative humidity and air pressure. In real life you would want to use this expensive sensor to measure all three at once, but for this case we are going to build a way for us to remotely toggle between measuring these three variables. We will set up a subsription that listens to commands published on a specific topic. We will then use the content of that message to change which variable is measured and published by the device and sensor.<br>
 First we will choose our topics. We will publish on three different topics depending on the variable that we are measuring.
 ```
 bme680/temperature
@@ -129,7 +137,57 @@ telling the device to switch to measuring pressure and publish on the appropriat
 topic = None
 variable = None
 def callback_function(client, userdata, message):
-    if message.pa
-    print("Received a new message:\n{0}".format(message.payload))
-    print("from topic:\n{0}".format(message.topic))
+    payload = json.loads(message.payload)
+    if "action" not in payload:
+        topic = None
+        variable = None
+    else:
+        if payload["action"] == "temperature":
+            topic = "bme680/temperature"
+            variable = "temperature"
+        elif payload["action"] == "pressure":
+            topic = "bme680/pressure"
+            variable = "pressure"
+        elif payload["action"] == "humidity":
+            topic = "bme680/humidity"
+            variable = "humidity"
+        else:
+            topic = None
+            variable = None
+```
+We will then use these global variables to adjust what variable we get from the sensor before publishing on the infinite loop.
+```python
+while True:
+    if sensor.get_sensor_data():
+        # Get the value currently toggled
+        value = None
+        if variable = "temperature":
+            value = sensor.data.temperature
+        elif variable = "pressure":
+            value = sensor.data.pressure
+        elif variable = "humidity":
+            value = sensor.data.humidity
+        elif:
+            value = None
+        message = {}
+        message['value'] = value
+        message['variable'] = variable
+        message['sequence'] = loopCount
+        message['timestamp_utc'] = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S.%fZ")
+        message['status'] = "success"
+        messageJson = json.dumps(message)
+         # This is the actual publishing to AWS
+        myAWSIoTMQTTClient.publish(topic, messageJson, 1)
+        print('Published topic %s: %s\n' % (topic, messageJson))
+        loopCount += 1
+    else:
+        message = {}
+        message['value'] = None
+        message['sequence'] = loopCount
+        message['timestamp_utc'] = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S.%fZ")
+        message['status'] = "fail"
+        messageJson = json.dumps(message)
+         # This is the actual publishing to AWS
+        myAWSIoTMQTTClient.publish(topic, messageJson, 1)
+        print('Published topic %s: %s\n' % (topic, messageJson))
 ```
