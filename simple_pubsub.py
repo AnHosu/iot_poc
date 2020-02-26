@@ -45,7 +45,7 @@ parser.add_argument("-r", "--rootCA", action="store", required=True, dest="rootC
 parser.add_argument("-c", "--cert", action="store", dest="certificatePath", help="Certificate file path")
 parser.add_argument("-k", "--key", action="store", dest="privateKeyPath", help="Private key file path")
 parser.add_argument("-id", "--clientId", action="store", dest="clientId", default="basicPubSub", help="Targeted client id")
-parser.add_argument("-t", "--topic", action="store", dest="subtopic", default="sdk/test/Python", help="Topic for publishing")
+parser.add_argument("-t", "--topic", action="store", dest="topic", default="sdk/test/Python", help="Topic for publishing")
 parser.add_argument("-s", "--subtopic", action="store", dest="subtopic", default="sdk/test/Python", help="Topic for subscribing")
 
 args = parser.parse_args()
@@ -68,6 +68,8 @@ def callback_function(client, userdata, message):
     print("Received a new message:\n{0}".format(message.payload))
     print("from topic:\n{0}".format(message.topic))
     payload = json.loads(message.payload)
+    global pubtopic
+    global variable
     if "action" not in payload:
         pubtopic = None
         variable = None
@@ -99,7 +101,7 @@ myAWSIoTMQTTClient.configureMQTTOperationTimeout(5)  # 5 sec
 
 # Connect and subscribe to AWS IoT
 myAWSIoTMQTTClient.connect()
-myAWSIoTMQTTClient.subscribe(sub_topic, 1, callback_function)
+myAWSIoTMQTTClient.subscribe(subtopic, 1, callback_function)
 time.sleep(2)
 
 # Publish to the same topic in a loop forever
@@ -107,36 +109,38 @@ pubtopic = None
 variable = None
 loopCount = 0
 while True:
-    if sensor.get_sensor_data():
-        # Get the value currently toggled
-        value = None
-        if variable == "temperature":
-            value = sensor.data.temperature
-        elif variable == "pressure":
-            value = sensor.data.pressure
-        elif variable == "humidity":
-            value = sensor.data.humidity
-        elif:
+    if variable is not None:
+        if sensor.get_sensor_data():
+            # Get the value currently toggled
             value = None
-
-        message = {}
-        message['value'] = value
-        message['variable'] = variable
-        message['sequence'] = loopCount
-        message['timestamp_utc'] = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S.%fZ")
-        message['status'] = "success"
-        messageJson = json.dumps(message)
-         # This is the actual publishing to AWS
-        myAWSIoTMQTTClient.publish(pubtopic, messageJson, 1)
-        print('Published topic %s: %s\n' % (pubtopic, messageJson))
-        loopCount += 1
-    else:
-        message = {}
-        message['value'] = None
-        message['sequence'] = loopCount
-        message['timestamp_utc'] = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S.%fZ")
-        message['status'] = "fail"
-        messageJson = json.dumps(message)
-         # This is the actual publishing to AWS
-        myAWSIoTMQTTClient.publish(pubtopic, messageJson, 1)
-        print('Published topic %s: %s\n' % (pubtopic, messageJson))
+            if variable == "temperature":
+                value = sensor.data.temperature
+            elif variable == "pressure":
+                value = sensor.data.pressure
+            elif variable == "humidity":
+                value = sensor.data.humidity
+            else:
+                value = None
+            message = {}
+            message['value'] = value
+            message['variable'] = variable
+            message['sequence'] = loopCount
+            message['timestamp_utc'] = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S.%fZ")
+            message['status'] = "success"
+            messageJson = json.dumps(message)
+             # This is the actual publishing to AWS
+            myAWSIoTMQTTClient.publish(pubtopic, messageJson, 1)
+            print('Published topic %s: %s\n' % (pubtopic, messageJson))
+            
+        else:
+            message = {}
+            message['value'] = None
+            message['sequence'] = loopCount
+            message['timestamp_utc'] = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S.%fZ")
+            message['status'] = "fail"
+            messageJson = json.dumps(message)
+             # This is the actual publishing to AWS
+            myAWSIoTMQTTClient.publish(pubtopic, messageJson, 1)
+            print('Published topic %s: %s\n' % (pubtopic, messageJson))
+    loopCount += 1
+    time.sleep(5)
