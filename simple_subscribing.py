@@ -19,10 +19,6 @@ parser.add_argument("-k", "--key", action="store", dest="privateKeyPath", help="
 parser.add_argument("-id", "--clientId", action="store", dest="clientId", default="basicPubSub", help="Targeted client id")
 parser.add_argument("-t", "--topic", action="store", dest="topic", default="sdk/test/Python", help="Targeted topic")
 
-if not args.certificatePath or not args.privateKeyPath:
-    parser.error("Missing credentials for authentication.")
-    exit(2)
-
 args = parser.parse_args()
 host = args.host
 rootCAPath = args.rootCAPath
@@ -31,6 +27,10 @@ privateKeyPath = args.privateKeyPath
 clientId = args.clientId
 topic = args.topic
 port = 8883
+
+if not args.certificatePath or not args.privateKeyPath:
+    parser.error("Missing credentials for authentication.")
+    exit(2)
 
 # Init AWSIoTMQTTClient
 myAWSIoTMQTTClient = AWSIoTMQTTClient(clientId)
