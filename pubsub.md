@@ -63,7 +63,38 @@ def callback_function(client, userdata, message):
     print("from topic:\n{0}".format(message.topic))
 ```
 In the next section, we will use this function to do cool things.<br>
-The subscription can be set up as soon as connection between the client and AWS IoT is established. The client will then listen for any published messages for as long as it lives or until the subscription is terminated. This also means that we do not have to listen in an infinite loop like we were publishing in an infinite loop earlier.
+The subscription can be set up as soon as connection between the client and AWS IoT is established. The client will then listen for any published messages for as long as it lives or until the subscription is terminated. This also means that we do not have to listen in an infinite loop like we were publishing in an infinite loop earlier.<br>
+With this, we have everything needed to set up a subscription:
+```python
+# Init AWSIoTMQTTClient
+myAWSIoTMQTTClient = AWSIoTMQTTClient(clientId)
+myAWSIoTMQTTClient.configureEndpoint(host, port)
+myAWSIoTMQTTClient.configureCredentials(rootCAPath, privateKeyPath, certificatePath)
+
+# AWSIoTMQTTClient connection configuration
+myAWSIoTMQTTClient.configureAutoReconnectBackoffTime(1, 32, 20)
+myAWSIoTMQTTClient.configureOfflinePublishQueueing(-1)  # Infinite offline Publish queueing
+myAWSIoTMQTTClient.configureDrainingFrequency(2)  # Draining: 2 Hz
+myAWSIoTMQTTClient.configureConnectDisconnectTimeout(10)  # 10 sec
+myAWSIoTMQTTClient.configureMQTTOperationTimeout(5)  # 5 sec
+
+# Connect and subscribe to AWS IoT
+myAWSIoTMQTTClient.connect()
+time.sleep(2)
+
+# Define what happens when messages are received
+def callback_function(client, userdata, message):
+    print("Received a new message:\n{0}".format(message.payload))
+    print("from topic:\n{0}".format(message.topic))
+
+# Subscribe
+AWSIoTMQTTClient.subscribe(topic, 1, callback)
+
+# Wait for messages to arrive
+while True:
+    time.sleep(5)
+```
+A full working example can be found here.
 # A Subscription Example
 Now we are ready to put together an example with using subscription. In the previous case we were getting temperature readings from the BME680 sensor and published them to AWS IoT on an infinite loop. However, the BME680 sensor is also able to measure relative humidity and air pressure. In real life you would want to use this expensive sensor to measure all three at once, but for this case we are going to build a way for us to remotely toggle between measuring these three variables. We will set up a subsription that listens to commands published on a specific topic. We will then use the content of that message to change which variable is measured and published by the device and sensor.<br>
 First we will choose our topics. We will publish on three different topics depending on the variable that we are measuring.
@@ -75,4 +106,19 @@ bme680/humidity
 In addition to this, we will reserve a topic for publishing actions to our device.
 ```
 bme680/action
+```
+Imagine now that we will publish messages on this topic telling the device what to do. For instance, we might send the message
+```json
+{
+    "action":"pressure"
+}
+```
+telling the device to switch to measuring pressure and publish on the appropriate topic. Publishing this message will be simple enough using the AWS IoT test suite, but we need to code up the response behaviour first. To this end, we will use the callback function
+```python
+topic = None
+variable = None
+def callback_function(client, userdata, message):
+    if message.pa
+    print("Received a new message:\n{0}".format(message.payload))
+    print("from topic:\n{0}".format(message.topic))
 ```
