@@ -1,10 +1,10 @@
 """
-Created on Wed Nov 12 07:30:05 2020
+Created on Wed Feb 12 07:30:05 2020
 @author: AnHosu
 
 This simple example of publishing to AWS IoT with is to be used 
  along with the tutorial at:
- https://github.com/AnHosu/iot_poc/blob/master/simple_publishing.py
+ https://github.com/AnHosu/iot_poc/blob/master/publishing.md
 """
 
 from AWSIoTPythonSDK.MQTTLib import AWSIoTMQTTClient
@@ -16,7 +16,6 @@ import time
 ### Setup for my sensor
 import bme680
 from subprocess import PIPE, Popen
-
 try:
     from smbus2 import SMBus
 except ImportError:
@@ -30,20 +29,9 @@ except IOError:
 # These oversampling settings can be tweaked to
 # change the balance between accuracy and noise in
 # the data.
-
-sensor.set_humidity_oversample(bme680.OS_2X)
-sensor.set_pressure_oversample(bme680.OS_4X)
 sensor.set_temperature_oversample(bme680.OS_8X)
 sensor.set_filter(bme680.FILTER_SIZE_3)
 
-# Gets the CPU temperature in degrees C
-def get_cpu_temperature():
-    process = Popen(['vcgencmd', 'measure_temp'], stdout=PIPE)
-    output, _error = process.communicate()
-    return float(output[output.index('=') + 1:output.rindex("'")])
-
-factor = 1.0  # Smaller numbers adjust temp down, vice versa
-smooth_size = 10  # Dampens jitter due to rapid CPU temp changes
 ### Sensor stuff done
 
 # Read in command-line parameters
@@ -68,60 +56,37 @@ if not args.certificatePath or not args.privateKeyPath:
     parser.error("Missing credentials for authentication.")
     exit(2)
 
-# Init AWSIoTMQTTClient
+# Initialise the AWS IoT MQTT Client
 myAWSIoTMQTTClient = AWSIoTMQTTClient(clientId)
 myAWSIoTMQTTClient.configureEndpoint(host, port)
 myAWSIoTMQTTClient.configureCredentials(rootCAPath, privateKeyPath, certificatePath)
 
-# AWSIoTMQTTClient connection configuration
+# Configuration of the client
 myAWSIoTMQTTClient.configureAutoReconnectBackoffTime(1, 32, 20)
 myAWSIoTMQTTClient.configureOfflinePublishQueueing(-1)  # Infinite offline Publish queueing
 myAWSIoTMQTTClient.configureDrainingFrequency(2)  # Draining: 2 Hz
 myAWSIoTMQTTClient.configureConnectDisconnectTimeout(10)  # 10 sec
 myAWSIoTMQTTClient.configureMQTTOperationTimeout(5)  # 5 sec
 
-# Connect and subscribe to AWS IoT
+# Connectto AWS IoT
 myAWSIoTMQTTClient.connect()
 time.sleep(2)
 
 # Publish to the same topic in a loop forever
-cpu_temps = []
 loopCount = 0
 while True:
+    message = {}
+    message['sequence'] = loopCount
     if sensor.get_sensor_data():
-        # This is all about getting the temperature from my sensor
-        #  compensating for the fact that I put it next to the CPU
-        cpu_temp = get_cpu_temperature()
-        cpu_temps.append(cpu_temp)
-
-        if len(cpu_temps) > smooth_size:
-            cpu_temps = cpu_temps[1:]
-
-        smoothed_cpu_temp = sum(cpu_temps) / float(len(cpu_temps))
-        raw_temp = sensor.data.temperature
-        comp_temp = raw_temp - ((smoothed_cpu_temp - raw_temp) / factor)
-
-        print("Compensated temperature: {:05.2f} *C".format(comp_temp))
-
-        message = {}
-        message['value'] = comp_temp
-        message['sequence'] = loopCount
-        message['timestamp_utc'] = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S.%fZ")
+        message['value'] = sensor.data.temperature
         message['status'] = "success"
-        messageJson = json.dumps(message)
-         # This is the actual publishing to AWS
-        myAWSIoTMQTTClient.publish(topic, messageJson, 1)
-        print('Published topic %s: %s\n' % (topic, messageJson))
-        loopCount += 1
     else:
-        message = {}
         message['value'] = None
-        message['sequence'] = loopCount
-        message['timestamp_utc'] = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S.%fZ")
         message['status'] = "fail"
-        messageJson = json.dumps(message)
-         # This is the actual publishing to AWS
-        myAWSIoTMQTTClient.publish(topic, messageJson, 1)
-        print('Published topic %s: %s\n' % (topic, messageJson))
-
-    time.sleep(1)
+    message['timestamp_utc'] = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S.%fZ")
+    messageJson = json.dumps(message)
+    # This is the actual publishing to AWS
+    myAWSIoTMQTTClient.publish(topic, messageJson, 1)
+    print('Published topic %s: %s\n' % (topic, messageJson))
+    loopCount += 1
+    time.sleep(3)

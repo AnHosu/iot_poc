@@ -27,13 +27,13 @@ The simplest way to do IoT with AWS. We will register our sensor as a thing in A
 In this case the Raspberry is simply simulating a microcontroller that will query the sensor and publish the result.<br><br>
 [Get started here.](https://github.com/AnHosu/iot_poc/blob/master/publishing.md "simple publishing case")
 Here is the full [example script](https://github.com/AnHosu/iot_poc/blob/master/simple_publishing.py "simple publishing example").
-## 2) Using Thing Shadows
+## 2) Publish and Subscribe
+We are building a setup where our device will not just send data but also respond to messages sent to it.<br><br>
+[Get started here.](https://github.com/AnHosu/iot_poc/blob/master/pubsub.md "simple publishing case"). Here is the full [example script](https://github.com/AnHosu/iot_poc/blob/master/simple_pubsub.py "simple pubsub example").
+## 3) Using Thing Shadows
 Using the Thing Shadow feature of AWS IoT to store a twin/shadow of the device in the cloud and update it whenever a new reading is available.<br>
 In this case the Raspberry is simply simulating a microcontroller that will query the sensor and publish the result.<br><br>
 This case is still under construction.
-## 3) Publish and Subscribe
-We are building a setup where our device will not just send data but also respond to messages sent to it.<br><br>
-This case is still under construction, but here is the [example script](https://github.com/AnHosu/iot_poc/blob/master/simple_pubsub.py "simple pubsub example") so far.
 ## 4) Connecting Things through AWS Greengrass
 Now our Pi will act the part of gateway device. The gateway device is where edge calculations will happen. This could be signal processing, edge analytics, or even machine learning models. Greengrass is the AWS offering for gateway devices.<br><br>
 This case is still under construction, but here is the [example script](https://github.com/AnHosu/iot_poc/blob/master/greengrass_thing.py "simple greengrass example") so far.

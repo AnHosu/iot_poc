@@ -96,7 +96,7 @@ Now, there are cases where QoS=0 is sufficient, but for this case we will use Qo
 Before we can publish a message, we need to set up and configure the connection to AWS IoT. For this, we are going to need many small bits of information. Let us start by setting up the client.
 ```python
 from AWSIoTPythonSDK.MQTTLib import AWSIoTMQTTClient
-# Init AWSIoTMQTTClient
+# Initialise client
 myAWSIoTMQTTClient = AWSIoTMQTTClient(clientId)
 ```
 First of all, we are giving our client a client ID. This ID is used by the message broker to recognise the specific client or application that it is communicating with. This is especially importtant when we start subscribing to topics as well. For now, just provide an ID allowed by the policy made earlier.<br>
@@ -108,7 +108,6 @@ myAWSIoTMQTTClient.configureCredentials(rootCAPath, privateKeyPath, certificateP
 We are specifying where the MQTT messages are going and how they are authenticated. The host is your AWS IoT custom endpoint which you can find in the AWS Console under IoT Core > Settings. As for the port we will use the default 8883 for MQTT with the X.509 client certificate. Bringing us to the next order of business; certificates. The certificates are the ones you downloaded to your device earlier. You simply provide strings with the paths to each of these certificates; the root certificate file, the private key file, and finally the device certificate file.<br>
 Next, we configure what happens when connection between the client and the broker on AWS IoT is lost.
 ```python
-# AWSIoTMQTTClient connection configuration
 myAWSIoTMQTTClient.configureAutoReconnectBackoffTime(1, 32, 20)
 myAWSIoTMQTTClient.configureOfflinePublishQueueing(-1)  # Infinite offline Publish queueing
 myAWSIoTMQTTClient.configureDrainingFrequency(2)  # Draining: 2 Hz
@@ -171,13 +170,10 @@ python simple_publishing.py -e <your aws iot endpoint> -r <file containing root 
 # Running the Case
 Running this script on a Pi with the BME680 sensor, when it is working, it should look like this
 ```
-Compensated temperature: 21.58 *C
 Published topic bme680/temperature: {"status": "success", "timestamp_utc": "2020-02-15T16:43:16.226983Z", "value": 21.57999999999999, "sequence": 25}
 
-Compensated temperature: 21.58 *C
 Published topic bme680/temperature: {"status": "success", "timestamp_utc": "2020-02-15T16:43:17.348050Z", "value": 21.57999999999999, "sequence": 26}
 
-Compensated temperature: 21.58 *C
 Published topic bme680/temperature: {"status": "success", "timestamp_utc": "2020-02-15T16:43:18.519356Z", "value": 21.57999999999999, "sequence": 27}
 ```
 But the most interesting part, of course, is whether the data gets to AWS. Let us say that we published to the topic `BME680/temperature`. We can open the AWS Console, go to IoT Core, and find the Test tab. Here we can subscribe to a topic. When I type in the topic `BME680/temperature`, 

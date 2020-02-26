@@ -70,19 +70,15 @@ In the next section, we will use this function to do cool things.<br>
 The subscription can be set up as soon as connection between the client and AWS IoT is established. The client will then listen for any published messages for as long as it lives or until the subscription is terminated. This also means that we do not have to listen in an infinite loop like we were publishing in an infinite loop earlier.<br>
 With this, we have everything needed to set up a subscription:
 ```python
-# Init AWSIoTMQTTClient
+# Configure client and connect
 myAWSIoTMQTTClient = AWSIoTMQTTClient(clientId)
 myAWSIoTMQTTClient.configureEndpoint(host, port)
 myAWSIoTMQTTClient.configureCredentials(rootCAPath, privateKeyPath, certificatePath)
-
-# AWSIoTMQTTClient connection configuration
 myAWSIoTMQTTClient.configureAutoReconnectBackoffTime(1, 32, 20)
 myAWSIoTMQTTClient.configureOfflinePublishQueueing(-1)  # Infinite offline Publish queueing
 myAWSIoTMQTTClient.configureDrainingFrequency(2)  # Draining: 2 Hz
 myAWSIoTMQTTClient.configureConnectDisconnectTimeout(10)  # 10 sec
 myAWSIoTMQTTClient.configureMQTTOperationTimeout(5)  # 5 sec
-
-# Connect and subscribe to AWS IoT
 myAWSIoTMQTTClient.connect()
 time.sleep(2)
 
