@@ -110,11 +110,11 @@ while True:
     if sensor.get_sensor_data():
         # Get the value currently toggled
         value = None
-        if variable = "temperature":
+        if variable == "temperature":
             value = sensor.data.temperature
-        elif variable = "pressure":
+        elif variable == "pressure":
             value = sensor.data.pressure
-        elif variable = "humidity":
+        elif variable == "humidity":
             value = sensor.data.humidity
         elif:
             value = None
