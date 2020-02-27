@@ -63,7 +63,6 @@ if not args.certificatePath or not args.privateKeyPath:
     exit(2)
     
 # Callback function for when we receive a message
-
 def callback_function(client, userdata, message):
     print("Received a new message:\n{0}".format(message.payload))
     print("from topic:\n{0}".format(message.topic))
@@ -110,6 +109,8 @@ variable = None
 loopCount = 0
 while True:
     if variable is not None:
+        message = {}
+        message['sequence'] = loopCount
         if sensor.get_sensor_data():
             # Get the value currently toggled
             value = None
@@ -121,26 +122,15 @@ while True:
                 value = sensor.data.humidity
             else:
                 value = None
-            message = {}
             message['value'] = value
-            message['variable'] = variable
-            message['sequence'] = loopCount
-            message['timestamp_utc'] = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S.%fZ")
             message['status'] = "success"
-            messageJson = json.dumps(message)
-             # This is the actual publishing to AWS
-            myAWSIoTMQTTClient.publish(pubtopic, messageJson, 1)
-            print('Published topic %s: %s\n' % (pubtopic, messageJson))
-            
         else:
-            message = {}
             message['value'] = None
-            message['sequence'] = loopCount
-            message['timestamp_utc'] = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S.%fZ")
             message['status'] = "fail"
-            messageJson = json.dumps(message)
-             # This is the actual publishing to AWS
-            myAWSIoTMQTTClient.publish(pubtopic, messageJson, 1)
-            print('Published topic %s: %s\n' % (pubtopic, messageJson))
+        message['timestamp_utc'] = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S.%fZ")
+        messageJson = json.dumps(message)
+        # This is the actual publishing to AWS
+        myAWSIoTMQTTClient.publish(pubtopic, messageJson, 1)
+        print('Published topic %s: %s\n' % (pubtopic, messageJson))
     loopCount += 1
     time.sleep(5)
