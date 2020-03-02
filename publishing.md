@@ -79,7 +79,7 @@ bme680/temperature
 ```
 We will dive deeper into topics in the next tutorials, but for now we will leave it at this simple one.
 ### Message
-The message is where you have the actual data point along with any metadata. It is structured as a [JSON](https://www.youtube.com/watch?v=wI1CWzNtE-M "JSON tutorial") and you can put whatever you want in there, but you will want the data point, a timestamp for the time of sampling, and maybe an idication whether the reading was succesful or not. In our script, we will structure the message to look something like this, when the sensor reading is successful
+The message contains the actual data along with any metadata. It is structured as a [JSON](https://www.youtube.com/watch?v=wI1CWzNtE-M "JSON tutorial") and you can put whatever you want in there, but you will want the data point, a timestamp for the time of sampling, and maybe an idication whether the reading was succesful or not. In our script, we will structure the message to look something like this, when the sensor reading is successful
 ```json
 {
     "utc_timestamp": 1581417910,
