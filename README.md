@@ -35,9 +35,9 @@ This tutorial uses the [first version](https://github.com/aws/aws-iot-device-sdk
 ### The MQTT Protocol
 Communication with AWS is facilitated by the MQTT protocol. This is a protocol commonly used in manufacturing systems, and is documented [online](http://mqtt.org/documentation "MQTT documentation"). You can also read about the [AWS flavour](https://docs.aws.amazon.com/iot/latest/developerguide/mqtt.html "AWS MQTT Documentation") of MQTT. Communicating using HTTPS is also possible but is not covered in this tutorial.<br>
 To get started using the MQTT protocol with AWS IoT, you only need to know a few concepts: message, topic, quality of service (QoS), publishing, and subsribing
-**Messages**
+#### Messages
 The message contains the actual data along with any metadata. It is structured as a json and you can put whatever you want in there, but you will want the reading from your thing, a timestamp for the time of sampling, and maybe an idication whether the reading was succesful or not. 
-**Topics**
+#### Topics
 Messages in AWS are distributed and filtered using topics. Topics are a kind of tag that you can use to identify the source of the message and distribute it accordingly. It is just a single string, generally in the format
 ```
 main_tag/secondary_tag/tertiary_tag/etc
@@ -52,9 +52,9 @@ factoryA/line22/milling/torque
 ```
 That way you can direct these messages to the store or dashboard for the same line but seperate lambda functions, if that is needed for your application.<br>
 The topic system is quite flexible and you will have to rely on your own rigid naming conventions if you want to effectivly utilise topics in an application with many things. Some specific topics are reserved for specific purposes such as interacting with shadows. We will dive deeper into the use of topics and reserved topics in the cases.
-**Publishing and Subscribing**
+#### Publishing and Subscribing
 Messages are transmitted using the publish subscribe model. A message always has a single publisher. The publisher client is the origin of the message and will publish that message to a given topic. Now a topic can have several publishes, meaning that several clients can publish messages to the same topic. Messages reach their destination through subscribers. Subscribers are clients that listen to a topic to get whatever messages are published there. A topic can also have multiple subscribers.
-**Quality of Service**
+#### Quality of Service
 Quality of Service, abbreviated QoS, is a flag specifying what happens when messages get lost in the network. The AWS flavour of MQTT accepts two QoS flags, 0 means that the message is delivered to subsrcibers 'at most once'. 1 means that the message is delivered to subsribers 'at least once'. So for QoS=0 the publisher will send the message once and then forget about it. If it does not get delivered, it is lost. For QoS=1, however, the message is sent, and the publisher then waits for a reply from the subscriber before forgetting the message, and resends if neccessary. This ensures that the subscriber gets the message at least once.
 # The Hardware Setup
 It would not be IoT without at least one IoT device. For this demonstration I have been using a Raspberry Pi 3 Model B+ along with a Bosch BME680 sensor on a [breakout](https://shop.pimoroni.com/products/bme680-breakout "Pimoroni BME680 breakout"). Any sensor would do, but I like this one and this particular breakout beacause it has a nice [library](https://github.com/pimoroni/bme680-python "Pimoroni BME680 library") which allows us to reduce the amount of code we need to query our sensor to a minimum. Furthermore, this particular sensor has four different components, allowing us to measure temperature, pressure, humidity, and, with a bit of additional work, air quality. I will not elaborate too much on this particular sensor equipment for this demonstration and I will try to be clear about when you can replace my code with that querying your particular sensor.<br>
