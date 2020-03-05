@@ -50,7 +50,7 @@ We will do scripting for this case using Python. AWS IoT currently has two SDKs 
 ```bash
 pip install AWSIoTPythonSDK
 ```
-The AWS IoT code below should work for any version of Python, but the interaction with the BME680 sensor is written with Python 3.7.
+The AWS IoT code below should work for any version of Python, but the interaction with the BME680 sensor is written with Python 3.5. It should work for 3.7 with some minor adjustments (3.7 uses the smbus2 library in place of smbus) but otherwise it should work for all other versions of Python 2 and 3.
 # Publishing to AWS IoT
 Now we are ready to get started on developing with the SDK.<br>
 Publishing a message to AWS using the Python SDK will look something like this

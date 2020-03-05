@@ -16,12 +16,6 @@ from datetime import datetime
 
 ### Setup for my sensor
 import bme680
-from subprocess import PIPE, Popen
-
-try:
-    from smbus2 import SMBus
-except ImportError:
-    from smbus import SMBus
 
 try:
     sensor = bme680.BME680(bme680.I2C_ADDR_PRIMARY)
@@ -66,7 +60,7 @@ if not args.certificatePath or not args.privateKeyPath:
 def callback_function(client, userdata, message):
     print("Received a new message:\n{0}".format(message.payload))
     print("from topic:\n{0}".format(message.topic))
-    payload = json.loads(message.payload)
+    payload = json.loads(message.payload.decode('utf-8'))
     global pubtopic
     global variable
     if "action" not in payload:

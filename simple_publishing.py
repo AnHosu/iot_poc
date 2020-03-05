@@ -15,11 +15,6 @@ import time
 
 ### Setup for my sensor
 import bme680
-from subprocess import PIPE, Popen
-try:
-    from smbus2 import SMBus
-except ImportError:
-    from smbus import SMBus
 
 try:
     sensor = bme680.BME680(bme680.I2C_ADDR_PRIMARY)
