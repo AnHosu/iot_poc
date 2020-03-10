@@ -170,7 +170,6 @@ while True:
         message = {}
         message['value'] = value
         message['variable'] = variable
-        message['sequence'] = loopCount
         message['timestamp_utc'] = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S.%fZ")
         message['status'] = "success"
         messageJson = json.dumps(message)
@@ -181,7 +180,6 @@ while True:
     else:
         message = {}
         message['value'] = None
-        message['sequence'] = loopCount
         message['timestamp_utc'] = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S.%fZ")
         message['status'] = "fail"
         messageJson = json.dumps(message)

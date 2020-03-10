@@ -150,7 +150,6 @@ myAWSIoTMQTTClient.connect()
 time.sleep(2)
 
 # Publish to the same topic in a loop forever
-cpu_temps = []
 loopCount = 0
 while True:
     message = {}
@@ -161,7 +160,7 @@ while True:
     # This is the actual publishing to AWS
     myAWSIoTMQTTClient.publish(topic, messageJson, 1)
     loopCount += 1
-    time.sleep(1)
+    time.sleep(5)
 ```
 The script [simple_publishing.py](https://github.com/AnHosu/iot_poc/blob/master/simple_publishing.py) is a full working example using the BME680 sensor. I can be called as follows
 ```bash
