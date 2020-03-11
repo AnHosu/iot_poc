@@ -70,7 +70,7 @@ myAWSIoTMQTTClient.connect()
 time.sleep(2)
 
 # Specify what to do, when we receive an update
-def callback_update_accecpted(client, userdata, message):
+def callback_update_accepted(client, userdata, message):
     print("Got an update, on the topic:")
     print(message.topic)
     print("The message is this")
@@ -83,8 +83,9 @@ def callback_update_rejected(client, userdata, message):
 
 # Subscribe
 myAWSIoTMQTTClient.subscribe(topic_update + "/accepted", 1, callback_update_accepted)
+time.sleep(2)
 myAWSIoTMQTTClient.subscribe(topic_update + "/rejected", 1, callback_update_rejected)
-
+time.sleep(2)
 # Publish to the same topic in a loop forever
 while True:
     message = {}
