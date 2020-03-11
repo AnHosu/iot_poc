@@ -7,6 +7,7 @@ Set up connection to AWS
 while true
     get a sensor reading
     update the shadow
+    publish the reading
     confirm that the shadow was updated
 ```
 We will then look at the shadow document using the AWS IoT test functionality.
@@ -78,21 +79,7 @@ Coding such a flow is quite similar to what we did for [publishing](https://gith
 # Define neccessary topics
 topic_update = "$aws/things/" + clientId + "/shadow/update"
 
-# Init AWSIoTMQTTClient
-myAWSIoTMQTTClient = AWSIoTMQTTClient(clientId)
-myAWSIoTMQTTClient.configureEndpoint(host, port)
-myAWSIoTMQTTClient.configureCredentials(rootCAPath, privateKeyPath, certificatePath)
-
-# AWSIoTMQTTClient connection configuration
-myAWSIoTMQTTClient.configureAutoReconnectBackoffTime(1, 32, 20)
-myAWSIoTMQTTClient.configureOfflinePublishQueueing(-1)  # Infinite offline Publish queueing
-myAWSIoTMQTTClient.configureDrainingFrequency(2)  # Draining: 2 Hz
-myAWSIoTMQTTClient.configureConnectDisconnectTimeout(10)  # 10 sec
-myAWSIoTMQTTClient.configureMQTTOperationTimeout(5)  # 5 sec
-
-# Connect and subscribe to AWS IoT
-myAWSIoTMQTTClient.connect()
-time.sleep(2)
+# Configure connection to AWS IoT
 
 # Keep updating the shadow on an infinite loop
 while True:
@@ -106,27 +93,116 @@ while True:
 ```
 This is fine and all but how do we know that it works?
 # Subscribing to Shadow Updates
-Whenever a shadow is successfully updated, it generates and publishes a message to the topic `$aws/things/yourDevice/shadow/update/accepted`. Once again, the exact name changes based on your device name. By subscribing to this specific topic with QoS = 1, your device or application can recieve updates whenever there are changes to the shadow.
+Whenever a shadow is successfully updated, it generates and publishes a message to the topic `$aws/things/yourDevice/shadow/update/accepted`. Once again, the exact name changes based on your device name. By subscribing to this specific topic with QoS = 1, your device or application can recieve updates whenever there are changes to the shadow.<br>
+Another useful topic to subscribe to is `$aws/things/yourDevice/shadow/update/rejected`. A message is published to this topic whenever an update fails and can thus provide excellent feedback for an application or for debugging.<br>
+You can subscribe to these topics just like you would any other topics. Again assuming that the client ID is identical to the device name, it might look something like this:
 ```python
 # Define neccessary topics
-topic_update = "$aws/things/" + clientId + "/shadow/update/accepted"
+topic_update = "$aws/things/" + clientId + "/shadow/update"
 
-# Init AWSIoTMQTTClient
-myAWSIoTMQTTClient = AWSIoTMQTTClient(clientId)
-myAWSIoTMQTTClient.configureEndpoint(host, port)
-myAWSIoTMQTTClient.configureCredentials(rootCAPath, privateKeyPath, certificatePath)
+# Configure connection to AWS IoT
 
-# AWSIoTMQTTClient connection configuration
-myAWSIoTMQTTClient.configureAutoReconnectBackoffTime(1, 32, 20)
-myAWSIoTMQTTClient.configureOfflinePublishQueueing(-1)  # Infinite offline Publish queueing
-myAWSIoTMQTTClient.configureDrainingFrequency(2)  # Draining: 2 Hz
-myAWSIoTMQTTClient.configureConnectDisconnectTimeout(10)  # 10 sec
-myAWSIoTMQTTClient.configureMQTTOperationTimeout(5)  # 5 sec
+# Specify what to do, when we receive an update
+def callback_update_accecpted(client, userdata, message):
+    print("Got an update, on the topic:")
+    print(message.topic)
+    print("The message is this")
+    print(message.payload)
 
-# Connect and subscribe to AWS IoT
-myAWSIoTMQTTClient.connect()
-time.sleep(2)
+# Specify what to do, when the update is rejected
+def callback_update_rejected(client, userdata, message):
+    print("The update was rejected. Received the following message:")
+    print(message.payload)
 
-# Callback function and subscribing
+# Subscribe
+myAWSIoTMQTTClient.subscribe(topic_update + "/accepted", 1, callback_update_accepted)
+myAWSIoTMQTTClient.subscribe(topic_update + "/rejected", 1, callback_update_rejected)
 ```
-# Topics and Policies for Shadows
+# Policies for Shadows
+Before we move on to more shadow related topics, we should take a look at the policies needed to allow devices and applications to utilise these topics. The documentation is quite substantial and even provides [specific examples](https://docs.aws.amazon.com/iot/latest/developerguide/device-shadow-mqtt.html "shadow policy examples") for policies related to shadow interaction. Hence, I will refrain from repeating the documentation here, and we will instead construct an example.<br>
+Imagine we have a device registered with the name my_sensor in AWS IoT. We would like to give the device access to establish a connection with AWS IoT, publish readings to the topic my_sensor/reading, update its shadow, and subscribe to the accepted and rejected responses generated on shadow update.<br>
+We already know how to construct statements to allow connection and publishing.
+```json
+{
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": [ "iot:Publish" ],
+      "Resource": [
+        "arn:aws:iot:your-region:your-aws-account:topic/my_sensor/reading"
+      ]
+    },
+    {
+      "Effect": "Allow",
+      "Action": [ "iot:Connect" ],
+      "Resource": [ 
+        "arn:aws:iot:your-region:your-aws-account:client/my_sensor" 
+      ]
+    }
+  ]
+}
+```
+To allow the desired shadow interactions, we will add another resource to the publish action, mentioning the topic `$aws/things/my_sensor/shadow/update`:<br>
+```json
+{
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": [ "iot:Publish" ],
+      "Resource": [
+        "arn:aws:iot:your-region:your-aws-account:topic/my_sensor/reading",
+        "arn:aws:iot:your-region:your-aws-account:topic/$aws/things/my_sensor/shadow/update"
+      ]
+    }
+  ]
+}
+```
+To allow subscription we will add a subscription action and two resources - one for each topic.
+```json
+{
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": [ "iot:Subscribe" ],
+      "Resource": [
+        "$aws/things/my_sensor/shadow/update/accepted",
+        "$aws/things/my_sensor/shadow/update/rejected"
+      ]
+    }
+  ]
+}
+```
+Given that the two subscription topics have the same root and that there are more update/ topics to subsrcibe to, it is tempting to add something along the lines of `$aws/things/my_sensor/shadow/update/*`, giving a wildcard for anything below the update root. While this would indeed work as intended now, AWS reserves the right to add additional reserved topics to the existing structure. If we were to use a policy with this type of wildcard, we thus risk allowing access to future topics causing unintended behaviour or information breaches. Therefore AWS discourages the use of wildcards in this way.<br>
+Our final policy looks like this:
+```json
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": [ "iot:Publish" ],
+      "Resource": [
+        "arn:aws:iot:your-region:your-aws-account:topic/my_sensor/reading",
+        "arn:aws:iot:your-region:your-aws-account:topic/$aws/things/my_sensor/shadow/update"
+      ]
+    },
+    {
+      "Effect": "Allow",
+      "Action": [ "iot:Connect" ],
+      "Resource": [ 
+        "arn:aws:iot:your-region:your-aws-account:client/my_sensor" 
+      ]
+    },
+    {
+      "Effect": "Allow",
+      "Action": [ "iot:Subscribe", "iot:Receive" ],
+      "Resource": [
+        "arn:aws:iot:your-region:your-aws-account:topicfilter/$aws/things/my_sensor/shadow/update/accepted",
+        "arn:aws:iot:your-region:your-aws-account:topicfilter/$aws/things/my_sensor/shadow/update/rejected"
+      ]
+    }
+  ]
+}
+```
+You might notice that we added an `iot:Receive` action to the subscription topics. This is not strictly needed, but offers us a little extra flexibility. The subscription action is only checked whenever a client connects to AWS, whereas the receive policy is checked each time a message is sent. This means that we have the option to disallow messages from a specific topic to devices using this certificate, even if they are already subscribing to the topic. Maybe useful in your case, maybe not, but now you know it exists.
+# Building the Demonstration

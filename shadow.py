@@ -50,6 +50,9 @@ if not args.certificatePath or not args.privateKeyPath:
     parser.error("Missing credentials for authentication.")
     exit(2)
 
+# Define topic for updates
+topic_update = "$aws/things/" + clientId + "/shadow/update"
+
 # Init AWSIoTMQTTClient
 myAWSIoTMQTTClient = AWSIoTMQTTClient(clientId)
 myAWSIoTMQTTClient.configureEndpoint(host, port)
@@ -66,10 +69,25 @@ myAWSIoTMQTTClient.configureMQTTOperationTimeout(5)  # 5 sec
 myAWSIoTMQTTClient.connect()
 time.sleep(2)
 
+# Specify what to do, when we receive an update
+def callback_update_accecpted(client, userdata, message):
+    print("Got an update, on the topic:")
+    print(message.topic)
+    print("The message is this")
+    print(message.payload)
+
+# Specify what to do, when the update is rejected
+def callback_update_rejected(client, userdata, message):
+    print("The update was rejected. Received the following message:")
+    print(message.payload)
+
+# Subscribe
+myAWSIoTMQTTClient.subscribe(topic_update + "/accepted", 1, callback_update_accepted)
+myAWSIoTMQTTClient.subscribe(topic_update + "/rejected", 1, callback_update_rejected)
+
 # Publish to the same topic in a loop forever
 while True:
     message = {}
-    temperature = get_sensor_reading()
     if sensor.get_sensor_data():
         temperature = sensor.data.temperature
     else:
@@ -78,4 +96,4 @@ while True:
     messageJson = json.dumps(message)
     # Update the shadow
     myAWSIoTMQTTClient.publish(topic_update, messageJson, 1)
-    time.sleep(30)
+    time.sleep(15)
