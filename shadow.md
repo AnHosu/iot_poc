@@ -265,7 +265,10 @@ python shadow.py -e <your aws iot endpoint> -r <file containing root certificate
 ```
 With this we are publishing the latest sensor readings directly to the shadow and then regurgitating the message generated when the update is accepted or rejected. When it works, the output should look something like this:
 ```
-
+Got an update, on the topic:
+$aws/things/my_sensor/shadow/update/accepted
+The message is this
+b'{"state":{"reported":{"temperature":35.48}},"metadata":{"reported":{"temperature":{"timestamp":1584104617}}},"version":99,"timestamp":1584104617}'
 ```
 If your setup is not working, make sure to check exactly which component is failing. If you are getting errors in the connection part, check whether your keys are for the right certificate and whether the certificate is activated. If you are getting an error in the subscription or publishing parts, check whether your policy gives the right accesses. Finally, you should not get any messages on the `/update/rejected` subject. If you do, one possible reason is that the message follows a wrong format.
 # More Topics and Interacting with the Shadow
