@@ -157,7 +157,7 @@ To allow the desired shadow interactions, we will add another resource to the pu
   ]
 }
 ```
-To allow subscription we will add a subscription action and two resources - one for each topic.
+To allow subscription we will add subscription and receive actions for two resources - one for each topic.
 ```json
 {
   "Statement": [
@@ -165,8 +165,16 @@ To allow subscription we will add a subscription action and two resources - one 
       "Effect": "Allow",
       "Action": [ "iot:Subscribe" ],
       "Resource": [
-        "$aws/things/my_sensor/shadow/update/accepted",
-        "$aws/things/my_sensor/shadow/update/rejected"
+        "arn:aws:iot:your-region:your-aws-account:topicfilter/$aws/things/my_sensor/shadow/update/accepted",
+        "arn:aws:iot:your-region:your-aws-account:topicfilter/$aws/things/my_sensor/shadow/update/rejected"
+      ]
+    },
+    {
+      "Effect": "Allow",
+      "Action": [ "iot:Receive" ],
+      "Resource": [
+        "arn:aws:iot:your-region:your-aws-account:topic/$aws/things/my_sensor/shadow/update/accepted",
+        "arn:aws:iot:your-region:your-aws-account:topic/$aws/things/my_sensor/shadow/update/rejected"
       ]
     }
   ]
@@ -195,14 +203,75 @@ Our final policy looks like this:
     },
     {
       "Effect": "Allow",
-      "Action": [ "iot:Subscribe", "iot:Receive" ],
+      "Action": [ "iot:Subscribe" ],
       "Resource": [
         "arn:aws:iot:your-region:your-aws-account:topicfilter/$aws/things/my_sensor/shadow/update/accepted",
         "arn:aws:iot:your-region:your-aws-account:topicfilter/$aws/things/my_sensor/shadow/update/rejected"
+      ]
+    },
+    {
+      "Effect": "Allow",
+      "Action": [ "iot:Receive" ],
+      "Resource": [
+        "arn:aws:iot:your-region:your-aws-account:topic/$aws/things/my_sensor/shadow/update/accepted",
+        "arn:aws:iot:your-region:your-aws-account:topic/$aws/things/my_sensor/shadow/update/rejected"
       ]
     }
   ]
 }
 ```
-You might notice that we added an `iot:Receive` action to the subscription topics. This is not strictly needed, but offers us a little extra flexibility. The subscription action is only checked whenever a client connects to AWS, whereas the receive policy is checked each time a message is sent. This means that we have the option to disallow messages from a specific topic to devices using this certificate, even if they are already subscribing to the topic. Maybe useful in your case, maybe not, but now you know it exists.
+You might notice that we added an `iot:Receive` action to the subscription topics. The subscription action is only checked whenever a client connects to AWS, whereas the receive policy is checked each time a message is sent. This means that we have the option to disallow messages from a specific topic to devices using this certificate, even if they are already subscribing to the topic. Maybe useful in your case, maybe not, but now you know it exists.
 # Building the Demonstration
+Now we have everything we need to build a full demonstration of shadow interaction. Now we know that we can structure the interaction in exactly the same way as with regular publishing and subscribing. There are but two key differences. The first is that we will publish and subscribe to the specific shadow topics. The second is that our published message follows the shadow document schema. Here is an example; You can have your callback functions do whatever you want, but I just wrote out some simple print statements:
+```python
+# Define topic for updates
+topic_update = "$aws/things/" + clientId + "/shadow/update"
+
+# Configure connection to AWS IoT
+
+# Specify what to do, when we receive an update
+def callback_update_accepted(client, userdata, message):
+    print("Got an update, on the topic:")
+    print(str(message.topic))
+    print("The message is this")
+    print(str(message.payload))
+
+# Specify what to do, when the update is rejected
+def callback_update_rejected(client, userdata, message):
+    print("The update was rejected. Received the following message:")
+    print(str(message.payload))
+
+# Subscribe
+myAWSIoTMQTTClient.subscribe(topic_update + "/accepted", 1, callback_update_accepted)
+time.sleep(2)
+myAWSIoTMQTTClient.subscribe(topic_update + "/rejected", 1, callback_update_rejected)
+time.sleep(2)
+# Publish to the same topic in a loop forever
+while True:    
+    message = {}
+    if sensor.get_sensor_data():
+        temperature = sensor.data.temperature
+    else:
+        temperature = None
+    message["state"] = { "reported" : {"temperature" : temperature } }
+    messageJson = json.dumps(message)
+    # Update the shadow
+    myAWSIoTMQTTClient.publish(topic_update, messageJson, 1)
+    time.sleep(15)
+```
+The full working script is [here](https://github.com/AnHosu/iot_poc/blob/master/shadow.py "shadow example"). Remember that the clientID is assumed to be the name of the thing. I registered a thing called my_sensor in AWS IoT and gave its certificate a policy like the one we developed above. Then I ran this script on my Raspberry Pi with the BME680 sensor. Like this:
+```bash
+python shadow.py -e <your aws iot endpoint> -r <file containing root certificate> -c <file containing device certificate> -k <file containing private key> -id <a client ID>
+```
+With this we are publishing the latest sensor readings directly to the shadow and then regurgitating the message generated when the update is accepted or rejected. When it works, the output should look something like this:
+```
+```
+If your setup is not working, make sure to check exactly which component is failing. If you are getting errors in the connection part, check whether your keys are for the right certificate and whether the certificate is activated. If you are getting an error in the subscription or publishing parts, check whether your policy gives the right accesses. Finally, you should not get any messages on the `/update/rejected` subject. If you do, one possible reason is that the message follows a wrong format.
+# More Topics and Interacting with the Shadow
+Congratulations! You now know how to set up a shadow for your device and you are ready to start building the foundation for your digital twin application. There are, however, a couple of extra details that you might want to know about before you start building the application.<br>
+If your application just listens to the `/update/accepted` you will have achieved nothing more by going through the shadow compared to just publishing. The real power of shadows is in always having the latest reading from your device available, while decoupling the device and the application.<br>
+Now that we are having the device update its shadow each time a new reading is available, we can start having our application access that shadow document whenever it needs it. You can always view the shadow document of your thing by going to AWS IoT > Manage > Things, then select your device and go to the Shadow tab
+<div align="center">
+	<img src="images/aws_shadow_document.png" alt="iot setup">
+	<br>
+</div>
