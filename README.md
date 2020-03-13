@@ -1,6 +1,5 @@
 # Contents
 * [Introduction](https://github.com/AnHosu/iot_poc#introduction)
-* [Introduction to AWS IoT](https://github.com/AnHosu/iot_poc#aws-iot)
 * [Hardware Setup](https://github.com/AnHosu/iot_poc#the-hardware-setup)
 * [Cases](https://github.com/AnHosu/iot_poc#case-setups)
     * [Simple publishing](https://github.com/AnHosu/iot_poc#1-connecting-a-thing-to-aws-iot)
@@ -8,6 +7,7 @@
     * [Publish and subscribe](https://github.com/AnHosu/iot_poc#3-publish-and-subscribe)
     * [Using Greengrass](https://github.com/AnHosu/iot_poc#4-connecting-things-through-aws-greengrass)
     * [Shadows, Greengrass, and ML models](https://github.com/AnHosu/iot_poc#5-connecting-things-through-aws-greengrass)
+* [Introduction to AWS IoT](https://github.com/AnHosu/iot_poc#aws-iot)
 
 # Introduction
 This repo is structured as an introduction to Industrial Internet of Things. On one hand it will be a simple introduction to how you might go about getting your sensor data from your sensor to the cloud. On the other hand, we will dive into advanced IoT concepts, so if you are looking for demonstrations of concepts like edge inference, fleet management, MQTT, and digital twins you have come to the right place.<br>
