@@ -22,6 +22,8 @@ In IoT terms the sensor is the 'thing' or 'device', and our Rasoberry Pi is the 
 	<img width=500 src="images/hardware_setup.jpg" alt="iot setup">
 	<br>
     Raspberry Pi 3 Model B+ with the BME680 sensor. The sensor is intentionally placed quite close to the CPU, which will interfere with the temperature readings. In case 4, we will deploy calculations from AWS onto the Pi to correct for this, as an example of edge calculations.
+    <br>
+    <br>
 </div>
 
 We are going to do four different cases in total. Hardware-wise everything will be the same throughout; BME680 connected to the Pi which in turn is connected to the internet. If you are using the same breakout, take a look at [this tutorial](https://learn.pimoroni.com/tutorial/sandyj/getting-started-with-bme680-breakout "BME680 tutorial") to set it up.
