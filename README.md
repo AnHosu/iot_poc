@@ -19,8 +19,9 @@ AWS offers multiple ways to ingest and store data, but for industrial scale sens
 It would not be IoT without at least one IoT device. The demonstrations focus on the software layer but use actual hardware to prove the concepts. I have been using a Raspberry Pi 3 Model B+ along with a Bosch BME680 sensor on a [breakout](https://shop.pimoroni.com/products/bme680-breakout "Pimoroni BME680 breakout"). Any sensor would do, but I like this one and this particular breakout beacause it has a nice [library](https://github.com/pimoroni/bme680-python "Pimoroni BME680 library") which allows us to reduce the amount of code we need to query our sensor to a minimum. Furthermore, this particular sensor has four different components, allowing us to measure temperature, pressure, humidity, and, with a bit of additional work, air quality. I will not elaborate too much on this particular sensor equipment for this demonstration and I will try to be clear about when you can replace my code with that querying your particular sensor.<br>
 In IoT terms the sensor is the 'thing' or 'device', and our Rasoberry Pi is the 'edge' or 'gateway device'. Names are not too important and, in real life, you would use different hardware for different situations.
 <div align="center">
-	<img src="images/hardware_setup.jpg" alt="iot setup">
+	<img width=500 src="images/hardware_setup.jpg" alt="iot setup">
 	<br>
+    Raspberry Pi 3 Model B+ with the BME680 sensor. The sensor is intentionally placed quite close to the CPU, which will interfere with the temperature readings. In case 4, we will deploy calculations from AWS onto the Pi to correct for this, as an example of edge calculations.
 </div>
 
 We are going to do four different cases in total. Hardware-wise everything will be the same throughout; BME680 connected to the Pi which in turn is connected to the internet. If you are using the same breakout, take a look at [this tutorial](https://learn.pimoroni.com/tutorial/sandyj/getting-started-with-bme680-breakout "BME680 tutorial") to set it up.
