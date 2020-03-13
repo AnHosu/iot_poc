@@ -265,13 +265,45 @@ python shadow.py -e <your aws iot endpoint> -r <file containing root certificate
 ```
 With this we are publishing the latest sensor readings directly to the shadow and then regurgitating the message generated when the update is accepted or rejected. When it works, the output should look something like this:
 ```
+
 ```
 If your setup is not working, make sure to check exactly which component is failing. If you are getting errors in the connection part, check whether your keys are for the right certificate and whether the certificate is activated. If you are getting an error in the subscription or publishing parts, check whether your policy gives the right accesses. Finally, you should not get any messages on the `/update/rejected` subject. If you do, one possible reason is that the message follows a wrong format.
 # More Topics and Interacting with the Shadow
 Congratulations! You now know how to set up a shadow for your device and you are ready to start building the foundation for your digital twin application. There are, however, a couple of extra details that you might want to know about before you start building the application.<br>
+## Get the Shadow Document
 If your application just listens to the `/update/accepted` you will have achieved nothing more by going through the shadow compared to just publishing. The real power of shadows is in always having the latest reading from your device available, while decoupling the device and the application.<br>
 Now that we are having the device update its shadow each time a new reading is available, we can start having our application access that shadow document whenever it needs it. You can always view the shadow document of your thing by going to AWS IoT > Manage > Things, then select your device and go to the Shadow tab
 <div align="center">
-	<img src="images/aws_shadow_document.png" alt="iot setup">
-	<br>
+	<img src="images/aws_shadow_document.png" alt="shadow document">
+  <br>
 </div>
+
+This is nice for demonstration and debugging purposes, but your application needs to access the document programatically. The MQTT protocol does not do requests, and operates using the publish and subscribe model only. So the way for your application to request the shadow document on demand is to publish a request to a specific topic and subscribe to a response topic.
+By sending an empty request, `{}`, to the topic `$aws/things/yourDevice/shadow/get` your application can trigger the shadow to publish a copy of the current shadow document to the subject `$aws/things/yourDevice/shadow/get/accepted`. The easiest way to see it in action is by subscribing to the `$aws/things/yourDevice/shadow/get/#` topicfilter in the test console and then publish an empty message to `/get`. I gave it a try here
+<div align="center">
+	<img src="images/aws_shadow_get.png" alt="shadow get">
+  <br>
+</div>
+
+This is also an excellent opportunity to explore what happens, when we do something unexpected. Here I published a string instead of a JSON, for instance:
+<div align="center">
+	<img src="images/aws_shadow_get_rejected.png" alt="shadow get">
+  <br>
+</div>
+
+The `/get` topic also has a `/rejected` subtopic that gives helpful error messages when requests are rejected.
+## Deleting the Shadow Document
+You might have guess this next topic group. We now know how to update and get the shadow document. Now we just need to know how to delete it. By publishing an empty message to the topic `$aws/things/yourDevice/shadow/delete` you delete the shadow document for yourDevice. On successful deletion, a confirmation is published to `/delete/accepted` and a message is published to `/delete/rejected` otherwise. Let us try to delete the shadow, then try to get, and see what happens:
+<div align="center">
+	<img src="images/aws_shadow_delete.png" alt="shadow delete">
+  <br>
+</div>
+<div align="center">
+	<img src="images/aws_shadow_delete_get.png" alt="shadow delete get">
+  <br>
+</div>
+
+We get an error message because there is no shadow document to get.
+## Shadow Topics Summary
+In summary, all shadow interaction topics are prefixed with `$aws/things/yourDevice/shadow` where 'yourDevice' is the ID of your thing as registered in AWS IoT. You interact with the shadow in three ways: you can update the shadow, get the shadow, or delete the shadow. These functions are triggered when messages are published to the topics `/update`, `/get`, or `/delete` repectively. When the actions succeed, messages are published to the `/accepted` subtopic. When the actions fail, messages are published to the `/rejected` subtopic with useful information for debugging.<br>
+Not covered in this demonstration are the `/update/document` and `/update/delta` topics. You can read more about all shadow interaction topics and find more example policies in the [docs](https://docs.aws.amazon.com/iot/latest/developerguide/device-shadow-mqtt.html "Shadow interaction docs").
