@@ -1,19 +1,22 @@
 # Publishing and Subscribing with AWS IoT
-In this tutorial, we will add upon the [previous](https://github.com/AnHosu/iot_poc/blob/master/publishing.md "simple publishing") tutorial by having our gateway device, the Raspberry Pi, subscribe to messages on a topic. With publishing, the information flow is from the device to AWS IoT, but with subscribing, the flow is reversed to be from AWS IoT to the client we configure. As we will see, the ability to subscribe as well as publish, is extremely useful for structuring and managing devices remotely.<br>
-We only need a few simple additions to our existing publish setup to make publishing work. The general structure of what we will do is:
+In this demonstration, we will add upon the [previous](https://github.com/AnHosu/iot_poc/blob/master/publishing.md "simple publishing") tutorial by having our gateway device, the Raspberry Pi, subscribe to messages on a topic. With publishing, the information flow is from the device to AWS IoT, but with subscribing, the flow is reversed to be from AWS IoT to the client we configure. As we will see, the ability to subscribe as well as publish, is extremely useful for structuring and managing devices remotely.<br>
+In general terms, we want our device to do the following
 ```
 prepare the sensor
 configure connection to AWS
-*define what happens with subscriptions
-*start subscribing
+define what happens with subscriptions
+start subscribing
 while true
+    react to any incoming messages
     get a sensor reading
     pack it up
     publish it
 ```
-The lines marked with an asterisk*, are new additions and are covered in this tutorial. The rest are covered in the [previous](https://github.com/AnHosu/iot_poc/blob/master/publishing.md "simple publishing") tutorial.
+Connecting to AWS IoT and publishing messages were covered in the [previous](https://github.com/AnHosu/iot_poc/blob/master/publishing.md "simple publishing") demonstration. In this demonstration, we focus on subscribing to messages and combining publishing and subscribing within one client.
 # Registering the Sensor in IoT Core
-Just as it is the case with publishing, we need to register the device that will subscribe to messages. We can use the same Thing and certificate as before, but we need to change the policy to allow subscription through using that certificate. This is accomplished by adding an additional statement to the policy allowing the action iot:Subscribe and providing the topic(s) to subscribe from. Here is an example of such a policy document.
+Just as it is the case with publishing, we need to register the device that will subscribe to messages. We can use the same Thing and certificate as before, but we need to change the policy to allow subscription through using that certificate. 
+For subscription to work, we need to add two additional statements to the policy. We need to allow `iot:Subscribe` to a topic filter and allow `iot:Receive` for a specific topic. The distinction between topic and topic filter can seem a little nebulous, but imagine a manufacturing line with hundreds of sensors publishing to topics with the prefix `factoryA/line22`. Then we might create a policy that allows subscription to all the topics `factoryA/line22/*`, where the asterisk is a wildcard, and policies that allow receiving of messages to specific topics such as `factoryA/line22/milling/torque`. 
+Here is an example of such a policy document that allows subscription and receiving to a single topic.
 ```json
 {
   "Version": "2012-10-17",
@@ -21,14 +24,22 @@ Just as it is the case with publishing, we need to register the device that will
     {
       "Effect": "Allow",
       "Action": [
-        "iot:Publish",
-        "iot:Receive"
+        "iot:Publish"
       ],
       "Resource": [
         "arn:aws:iot:your-region:your-aws-account:topic/bme680/temperature",
         "arn:aws:iot:your-region:your-aws-account:topic/bme680/pressure",
         "arn:aws:iot:your-region:your-aws-account:topic/bme680/humidity",
-        "arn:aws:iot:your-region:your-aws-account:topicfilter/bme680/actions"
+        "arn:aws:iot:your-region:your-aws-account:topic/bme680/actions"
+      ]
+    },
+    {
+      "Effect": "Allow",
+      "Action": [
+        "iot:Receive"
+      ],
+      "Resource": [
+        "arn:aws:iot:your-region:your-aws-account:topic/bme680/actions"
       ]
     },
     {
@@ -52,7 +63,7 @@ Just as it is the case with publishing, we need to register the device that will
   ]
 }
 ```
-This is the policy document we will use for the following example. One thing to note is that the topic we are allowing subscription, `bme680/action`, we are also allowing publishing to. This allows us to test the subscription using the AWS IoT Console without introducing additional devices and certificates.
+This is the actual policy document for the following examples. It might seem like we are repeating the same thing many times, but there is a good reason for it. The subscription action is only checked whenever a client connects to AWS, whereas the receive policy is checked each time a message is sent. This means that we have the option to disallow messages from a specific topic to devices using this certificate, even if they are already subscribing to the topic. Maybe useful in your case, maybe not, but now you know it exists.
 # Subscribing to Topics
 Like publishing, subscribing can be done with just one line of code. We just need to call the [.subscribe()](https://s3.amazonaws.com/aws-iot-device-sdk-python-docs/sphinx/html/index.html#AWSIoTPythonSDK.MQTTLib.AWSIoTMQTTClient.subscribe "subscribe docs") function of the IoT client.
 ```python
@@ -99,7 +110,11 @@ A full working example can be found [here](https://github.com/AnHosu/iot_poc/blo
 python simple_subscribing.py -e <your aws iot endpoint> -r <file containing root certificate> -c <file containing device certificate> -k <file containing private key> -id <a client ID> -t <the topic to subscribe to>
 ```
 Nothing happens before we start publishing messages to our topic of choice. I ran the example on my Pi, using the topic `/bme680/actions`. I then moved to the test suite at AWS IoT Core > Test, and published a message to that topic.<br>
-![test client](https://github.com/AnHosu/iot_poc/blob/master/images/aws_iot_test_simple_subscribe.PNG)<br>
+<div align="center">
+	<img src="images/aws_iot_test_simple_subscribe.PNG" alt="shadow delete">
+  <br>
+</div>
+
 The console output on the Pi then looks like this:
 ```
 Received a new message:

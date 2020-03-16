@@ -220,7 +220,6 @@ Our final policy looks like this:
   ]
 }
 ```
-You might notice that we added an `iot:Receive` action to the subscription topics. The subscription action is only checked whenever a client connects to AWS, whereas the receive policy is checked each time a message is sent. This means that we have the option to disallow messages from a specific topic to devices using this certificate, even if they are already subscribing to the topic. Maybe useful in your case, maybe not, but now you know it exists.
 # Building the Demonstration
 Now we have everything we need to build a full demonstration of shadow interaction. Now we know that we can structure the interaction in exactly the same way as with regular publishing and subscribing. There are but two key differences. The first is that we will publish and subscribe to the specific shadow topics. The second is that our published message follows the shadow document schema. Here is an example; You can have your callback functions do whatever you want, but I just wrote out some simple print statements:
 ```python
@@ -301,6 +300,7 @@ You might have guess this next topic group. We now know how to update and get th
 	<img src="images/aws_shadow_delete.png" alt="shadow delete">
   <br>
 </div>
+<br>
 <div align="center">
 	<img src="images/aws_shadow_delete_get.png" alt="shadow delete get">
   <br>
