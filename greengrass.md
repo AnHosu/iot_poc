@@ -23,6 +23,7 @@ The process of installing Greengrass depends a lot on your device and its operat
 - Set up the user group (ggc_group) and user (ggc_user) that Greengrass Core will assume on your device
 - [Unpack software](https://docs.aws.amazon.com/greengrass/latest/developerguide/gg-device-start.html) and install certificates
 - Download and install the root CA certificate
+
 Once you have done all these steps, you might want to check that you have all the dependencies you need by running the Greengrass dependency checker:
 ```bash
 mkdir greengrass-dependency-checker-GGCv1.10.x
@@ -32,8 +33,18 @@ unzip greengrass-dependency-checker-GGCv1.10.x.zip
 cd greengrass-dependency-checker-GGCv1.10.x
 sudo ./check_ggc_dependencies | more
 ```
-You might want to install the Java 8 runtime
+If it is not available on your device, you might want to install the Java 8 runtime
 ```bash
 sudo apt install openjdk-8-jdk
 ```
-For this demonstration we will use Python 3.5 for the functions we deploy into Greengrass Core. Therefore we also need to make sure that the appropriate Python runtime is available to Greengrass core.
+For this demonstration we will use Python 3.7 for the functions we deploy into Greengrass Core. Therefore we also need to make sure that Python 3.7 is available to Greengrass core on the device.<br>
+When all is set up and configured, you can start Greengrass by running
+```bash
+cd /greengrass/ggc/core/
+sudo ./greengrassd start
+```
+Greengrass Core will need to be running on your device in order to establish a connection between Core and the cloud. You can walk through the [AWS hello world cases](https://docs.aws.amazon.com/greengrass/latest/developerguide/module3-I.html) to familiarise yourself with Greengrass. We are going to do many of the same things in this demonstration but in a slightly different order and using our hardware setup instead of simulated devices.
+# Connecting a Thing through Greengrass
+During the setup, we created a Greengrass Group. The Group consists of one core device (in our case the Pi) and all the things (e.g. our sensor) associated with the core. Right now our group only consists of the Core device, we need to associate our thing, the sensor, with the core. We follow the [guidelines](https://docs.aws.amazon.com/greengrass/latest/developerguide/device-group.html "register a thing in Greengrass"), and go to AWS IoT > Greengrass > Groups, choose the group we just created, go to Devices, and click "Add Device". The creation procedure is similar to the procedure for any other Thing registered in AWS IoT. Indeed, after registering the device, you will be able to find it under the AWS IoT > Manage tab. The key difference here is that the device is associated with the core device.<br>
+We will now proceed to setup up a script that publishes readings from the sensor to a topic. The messages will never reach the cloud, however. Instead, the messages are published into the core device on a topic that only lives within the the Greengrass group. In the core device, we can do transformations to the messages before publishing it to the cloud. This way the sensor will only connect to the cloud once when discovering the core device to publish to, otherwise it remains offline.
+# Make Greengrass Run on Start Up

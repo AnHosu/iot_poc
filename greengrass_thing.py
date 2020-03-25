@@ -10,7 +10,6 @@ import sys
 import time
 import uuid
 import json
-import logging
 import argparse
 from AWSIoTPythonSDK.core.greengrass.discovery.providers import DiscoveryInfoProvider
 from AWSIoTPythonSDK.core.protocol.connection.cores import ProgressiveBackOffCore
@@ -19,14 +18,12 @@ from AWSIoTPythonSDK.exception.AWSIoTExceptions import DiscoveryInvalidRequestEx
 
 ### Setup for my particular sensor
 import bme680
-import smbus2
+
 try:
     sensor = bme680.BME680(bme680.I2C_ADDR_PRIMARY,smbus2.SMBus(1))
 except IOError:
     sensor = bme680.BME680(bme680.I2C_ADDR_SECONDARY,smbus2.SMBus(1))
 
-sensor.set_humidity_oversample(bme680.OS_2X)
-sensor.set_pressure_oversample(bme680.OS_4X)
 sensor.set_temperature_oversample(bme680.OS_8X)
 sensor.set_filter(bme680.FILTER_SIZE_3)
 ### Sensor stuff done	
@@ -67,13 +64,6 @@ if not os.path.isfile(privateKeyPath):
     parser.error("No private key found at {}".format(privateKeyPath))
     exit(3)
 
-# Configure logging
-logger = logging.getLogger("AWSIoTPythonSDK.core")
-logger.setLevel(logging.DEBUG)
-streamHandler = logging.StreamHandler()
-formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-streamHandler.setFormatter(formatter)
-logger.addHandler(streamHandler)
 
 # Progressive back off core
 backOffCore = ProgressiveBackOffCore()
@@ -106,7 +96,6 @@ while retryCount != 0:
         groupCAFile = open(groupCA, "w")
         groupCAFile.write(ca)
         groupCAFile.close()
-
         discovered = True
         print("Now proceed to the connecting flow...")
         break
