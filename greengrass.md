@@ -44,7 +44,108 @@ cd /greengrass/ggc/core/
 sudo ./greengrassd start
 ```
 Greengrass Core will need to be running on your device in order to establish a connection between Core and the cloud. You can walk through the [AWS hello world cases](https://docs.aws.amazon.com/greengrass/latest/developerguide/module3-I.html) to familiarise yourself with Greengrass. We are going to do many of the same things in this demonstration but in a slightly different order and using our hardware setup instead of simulated devices.
-# Connecting a Thing through Greengrass
-During the setup, we created a Greengrass Group. The Group consists of one core device (in our case the Pi) and all the things (e.g. our sensor) associated with the core. Right now our group only consists of the Core device, we need to associate our thing, the sensor, with the core. We follow the [guidelines](https://docs.aws.amazon.com/greengrass/latest/developerguide/device-group.html "register a thing in Greengrass"), and go to AWS IoT > Greengrass > Groups, choose the group we just created, go to Devices, and click "Add Device". The creation procedure is similar to the procedure for any other Thing registered in AWS IoT. Indeed, after registering the device, you will be able to find it under the AWS IoT > Manage tab. The key difference here is that the device is associated with the core device.<br>
-We will now proceed to setup up a script that publishes readings from the sensor to a topic. The messages will never reach the cloud, however. Instead, the messages are published into the core device on a topic that only lives within the the Greengrass group. In the core device, we can do transformations to the messages before publishing it to the cloud. This way the sensor will only connect to the cloud once when discovering the core device to publish to, otherwise it remains offline.
-# Make Greengrass Run on Start Up
+# Connecting a Thing to Greengrass Core
+During the setup, we created a Greengrass Group. The Group will eventually consist of one core device (in our case the Pi) and all the things (e.g. our sensors) associated with the core. Right now our group only consists of the Core device. We need to associate our thing, the sensor, with the core. To do so, we follow the [guidelines](https://docs.aws.amazon.com/greengrass/latest/developerguide/device-group.html "register a thing in Greengrass"), and go to AWS IoT > Greengrass > Groups, choose the group we just created, go to Devices, and click "Add Device". The creation procedure is similar to the procedure for any other Thing registered in AWS IoT. Indeed, after registering the device, you will be able to find it under the AWS IoT > Manage tab. The key difference here is that the device is associated with the core device.<br>
+
+<div align="center">
+	<img width=500 src="images/greengrass_group.png" alt="iot setup">
+	<br>
+</div>
+
+We will now proceed to setup up a script that connects to Greengrass Core abd publishes readings from the sensor to a topic. The messages will never reach the cloud, however. Instead, the messages are published into the core device on a topic that only lives within the the Greengrass group. The logic is something along the lines of
+```
+setup sensor
+connect to Greengrass core
+while true
+	get sensor values
+	publish to local topic
+```
+You might notice that this logic is very similar to what we did in the case of simple publishing, and indeed the two cases are very similar. The main difference is that we will set up and configure a client that connects to Greengrass Core rather than IoT Core. <br>
+We use the same MQTT client as always and, as usual, we will need a variety of resources to establish the right connection.
+```python
+from AWSIoTPythonSDK.MQTTLib import AWSIoTMQTTClient
+
+myAWSIoTMQTTClient = AWSIoTMQTTClient(clientId)
+myAWSIoTMQTTClient.configureCredentials(groupCA, privateKeyPath, certificatePath)
+myAWSIoTMQTTClient.configureEndpoint(coreHost, corePort)
+```
+Let us discuss each of these resources in turn.
+- ClientId could be anything allowed by the policy you created for your thing in the previous step. To keep down complexity, using the device ID is a prudent idea.
+- privateKeyPath is the complete path to the key associated with the certificate created earlier for your thing.
+- certificatePath is the complete path to the certificate for your thing that you created earlier.
+- groupCA is the certificate authority for your Greengrass group and is used to authenticate that your thing is indeed connected to the intended Greengrass core when sending and receiving messages. In a moment we will walk through how to obtain this certificate. Not that it is not the root certificate authority used when communicating with AWS IoT Core.
+- coreHost is the server running the Greengrass Core, i.e. your core device
+- corePort is the port on which your thing will communicate with the core using the MQTT protocol. The default setting for when generating a new Greengrass Core is 8883, but you can [configure](https://docs.aws.amazon.com/greengrass/latest/developerguide/gg-core.html) this
+
+The three first elements are realtively straight forward; you know these from when you created the thing and its certificate in the first place. The three remaining resources, however, require a bit of additional work. The group certificate is managed by AWS and by default it is rotated every 7 days. This requires a little bit of effort on our part when connecting things to the core, but it worth it for the added security. Since the the Greengrass Core is connected to AWS, AWS also knows the host and port, and so while we are querying AWS for the group certificate, we can also retrieve these to pieces of information. This process of retrieving connection information is called core discovery and is the only time our thing will connect to AWS. Once connected to the core, all communication will be with it.<br>
+To set up the discovery process, we need a special dicovery client that is also included in the AWS IoT SDK
+```python
+from AWSIoTPythonSDK.core.greengrass.discovery.providers import DiscoveryInfoProvider
+
+discoveryInfoProvider = DiscoveryInfoProvider()
+discoveryInfoProvider.configureEndpoint(host)
+discoveryInfoProvider.configureCredentials(rootCAPath, certificatePath, privateKeyPath)
+discoveryInfoProvider.configureTimeout(10)
+```
+The discovery client is set up using the usual materials, the AWS IoT custom endpoint for your account, the AWS root certificate authority, the private key, and certificate for your thing. We also tell the client to wait a maximum of 10 seconds before timing out a connection attempt.<br>
+The client can be used to send a discovery request to AWS and fetch connection information for the core. It works like this:
+```python
+# Returns list of AWSIoTPythonSDK.core.greengrass.discovery.models.DiscoveryInfo objects
+discoveryInfo = discoveryInfoProvider.discover(thingName)
+```
+We provide the thing name of the thing for which we are looking up connection information. In most of yor applications this is probably the same as your client name, but in this case it *has* to be the name of your thing as registered in AWS.<br>
+If the request is successful, discoveryInfo will hold information about Greengrass groups that the device belongs to (a device can belong to several groups, but each group has exactly one core). Of interest to us are the certification authorities and the connection information, the lists of which can be accessed as such:
+```python
+# Returns list of AWSIoTPythonSDK.core.greengrass.discovery.models.CoreConnectivtyInfo objects
+caList = discoveryInfo.getAllCas()
+# Returns list of tuples (CA content, group ID)
+coreList = discoveryInfo.getAllCores()
+```
+These are lists with each entry representing a core. We can get the certificate authority like this
+```python
+groupId, ca = caList[0]
+```
+Each core might have several connection options so we might like to keep them in a list to loop over later
+```python
+coreInfo = coreList[0]
+# Get a list of tuples (host, port)
+coreConnectivityInfoList = coreInfo.connectivityInfoList
+``` 
+Now we have everything we need to have out thing automatically discover and connect to the Greengrass core:
+```python
+from AWSIoTPythonSDK.core.greengrass.discovery.providers import DiscoveryInfoProvider
+from AWSIoTPythonSDK.core.protocol.connection.cores import ProgressiveBackOffCore
+from AWSIoTPythonSDK.MQTTLib import AWSIoTMQTTClient
+# Configure discovery
+discoveryInfoProvider = DiscoveryInfoProvider()
+discoveryInfoProvider.configureEndpoint(host)
+discoveryInfoProvider.configureCredentials(rootCAPath, certificatePath, privateKeyPath)
+discoveryInfoProvider.configureTimeout(10)
+# Discover Greengrass Cores
+discoveryInfo = discoveryInfoProvider.discover(thingName)
+# Get connection info for first available core
+caList = discoveryInfo.getAllCas()
+coreList = discoveryInfo.getAllCores()
+groupId, ca = caList[0]
+coreInfo = coreList[0]
+coreConnectivityInfoList = coreInfo.connectivityInfoList
+# Loop over and try connection with each set of host name and port
+for connectionInfo in coreConnectivityInfoList:
+	coreHost = connectionInfo.host
+    corePort = connectionInfo.port
+    myAWSIoTMQTTClient.configureEndpoint(coreHost, corePort)
+    try:
+        myAWSIoTMQTTClient.connect()
+        break
+    except BaseException as e:
+        pass
+```
+This is the most condensed code needed to implement discovery, but in production you will want to add logging, error handling, retries for discoveries, and other frills. The [example script](greengrass_thing.py "example script") for this section contains a bit more detail, and is based off of the [example](https://github.com/aws/aws-iot-device-sdk-python/blob/master/samples/greengrass/basicDiscovery.py "AWS IoT SDK basic discovery example") included with the SDK.
+# Setting up Subscriptions on Greengrass Core
+# Make Greengrass Run on Boot
+# In Production
+## Handle certificate authority rotation
+## Make Greengrass Core run on boot
+## Connection retries and progressive backoff logic
+Imagine the following situation. You have a couple of hundred sensors that connect to one or a few Greengrass core devices, and all run off of the same power supply. At one point, the power supply is switched off, maybe it is maintenance maybe it is an error, but after a while power returns and your sensors and their controllers reboot. You set up the controllers such that they will automatically try to reconnect with the core. This is fine, but suddenly the core is getting hundreds of connection requests within a few seconds, so the controllers are receiving errors. Now, obviously there is nothing wrong with the core devices; they are just getting too many requests, so we will want the controllers to retry the connection before giving up. However, we do not want to have them all retry at the same time lest we repeat the story again. That is why we implement progressive backoff logic.<br>
+...
