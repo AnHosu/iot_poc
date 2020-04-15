@@ -44,7 +44,7 @@ cd /greengrass/ggc/core/
 sudo ./greengrassd start
 ```
 Greengrass Core will need to be running on your device in order to establish a connection between Core and the cloud. You can walk through the [AWS hello world cases](https://docs.aws.amazon.com/greengrass/latest/developerguide/module3-I.html) to familiarise yourself with Greengrass. We are going to do many of the same things in this demonstration but in a slightly different order and using our hardware setup instead of simulated devices.
-# Connecting a Thing to Greengrass Core
+# Build a Greengrass Group
 During the setup, we created a Greengrass Group. The Group will eventually consist of one core device (in our case the Pi) and all the things (e.g. our sensors) associated with the core. Right now our group only consists of the Core device. We need to associate our thing, the sensor, with the core. To do so, we follow the [guidelines](https://docs.aws.amazon.com/greengrass/latest/developerguide/device-group.html "register a thing in Greengrass"), and go to AWS IoT > Greengrass > Groups, choose the group we just created, go to Devices, and click "Add Device". The creation procedure is similar to the procedure for any other Thing registered in AWS IoT. Indeed, after registering the device, you will be able to find it under the AWS IoT > Manage tab. The key difference here is that the device is associated with the core device.<br>
 
 <div align="center">
@@ -61,6 +61,7 @@ while true
 	publish to local topic
 ```
 You might notice that this logic is very similar to what we did in the case of simple publishing, and indeed the two cases are very similar. The main difference is that we will set up and configure a client that connects to Greengrass Core rather than IoT Core. <br>
+## Connecting a Device to Greengrass Core
 We use the same MQTT client as always and, as usual, we will need a variety of resources to establish the right connection.
 ```python
 from AWSIoTPythonSDK.MQTTLib import AWSIoTMQTTClient
@@ -116,16 +117,17 @@ Now we have everything we need to have out thing automatically discover and conn
 from AWSIoTPythonSDK.core.greengrass.discovery.providers import DiscoveryInfoProvider
 from AWSIoTPythonSDK.core.protocol.connection.cores import ProgressiveBackOffCore
 from AWSIoTPythonSDK.MQTTLib import AWSIoTMQTTClient
-# Configure discovery
+# Configure client for gg core discovery
 discoveryInfoProvider = DiscoveryInfoProvider()
 discoveryInfoProvider.configureEndpoint(host)
 discoveryInfoProvider.configureCredentials(rootCAPath, certificatePath, privateKeyPath)
 discoveryInfoProvider.configureTimeout(10)
-# Discover Greengrass Cores
+# Discover gg cores for the thing
 discoveryInfo = discoveryInfoProvider.discover(thingName)
-# Get connection info for first available core
+# Get connection info
 caList = discoveryInfo.getAllCas()
 coreList = discoveryInfo.getAllCores()
+# Get info for the first core
 groupId, ca = caList[0]
 coreInfo = coreList[0]
 coreConnectivityInfoList = coreInfo.connectivityInfoList
@@ -140,11 +142,18 @@ for connectionInfo in coreConnectivityInfoList:
     except BaseException as e:
         pass
 ```
-This is the most condensed code needed to implement discovery, but in production you will want to add logging, error handling, retries for discoveries, and other frills. The [example script](greengrass_thing.py "example script") for this section contains a bit more detail, and is based off of the [example](https://github.com/aws/aws-iot-device-sdk-python/blob/master/samples/greengrass/basicDiscovery.py "AWS IoT SDK basic discovery example") included with the SDK.
-# Setting up Subscriptions on Greengrass Core
-# Make Greengrass Run on Boot
+This is the most condensed code needed to implement discovery, but in production you will want to add much more logging, error handling, retries for discoveries, and other frills. See the section below on Greengrass in production for a further discussion on how to improve the thing script for a real world scenario.
+## Publishing and Subscribing in the Greengrass Group
+Now that our thing is connected to the core in its Greengrass group we can start publishing data to a local topic. From the point of view of our thing, this works just like publishing to a topic on AWS IoT. Using the client we configured:
+```python
+myAWSIoTMQTTClient.publish(topic, messageJson, 1)
+```
+With this, we have everything needed to run our thing running. The [example script](greengrass_thing.py "example script") for this section summarises everything we have done so far but contains a bit more detail. It is based off of the [example](https://github.com/aws/aws-iot-device-sdk-python/blob/master/samples/greengrass/basicDiscovery.py "AWS IoT SDK basic discovery example") included with the AWS IoT SDK and was adapted to be used with our hardware setup. Even assuming that the Greengrass core is running and the thing script is publishing values, not much is happening yet. If you go to the test console and subscribe to the topic that the thing is publishing to, there should be no values flowing in, as nothing is being sent there. In order for us to see data flowing into the cloud, we have to grab the data in Greengrass Core and pass it on to a new topic that is published to the cloud.<br>
+The way this is done with Greengrass is by defining a Lambda function in AWS and deploying onto the core. First let us write the code that will republish the data
+## Calculations on the Edge
 # In Production
 ## Handle certificate authority rotation
+### Persisting connection information
 ## Make Greengrass Core run on boot
 ## Connection retries and progressive backoff logic
 Imagine the following situation. You have a couple of hundred sensors that connect to one or a few Greengrass core devices, and all run off of the same power supply. At one point, the power supply is switched off, maybe it is maintenance maybe it is an error, but after a while power returns and your sensors and their controllers reboot. You set up the controllers such that they will automatically try to reconnect with the core. This is fine, but suddenly the core is getting hundreds of connection requests within a few seconds, so the controllers are receiving errors. Now, obviously there is nothing wrong with the core devices; they are just getting too many requests, so we will want the controllers to retry the connection before giving up. However, we do not want to have them all retry at the same time lest we repeat the story again. That is why we implement progressive backoff logic.<br>
