@@ -1,4 +1,4 @@
-# Publishing to AWS
+# Publishing Industrial Data with AWS IoT
 In this tutorial we will obtain a value from a sensor and publish it to a topic on AWS. No added shenanigans; this is as simple as it gets.<br>
 At the core of it, we want to grab a reading from the sensor, wrap it in a message with some useful metadata, and publish that to AWS IoT. We will want to do that continuosly on a loop, meaning that our script should end up being structured as follows.<br>
 ```
@@ -9,7 +9,14 @@ while true
     pack it up
     publish it
 ```
-I will not elaborate too much on the sensor setup here, but we will be using the Bosch BME680 air quality sensor. The BME680 does four different measurements, but for this case we will only be measuring and publishing the temperature.
+For the demonstration we will be using the Bosch BME680 air quality sensor connected to a Raspberry Pi model 3B. The BME680 does four different measurements, but for this case we will only be measuring and publishing the temperature. The Pi is just there to query the sensor and run the AWS IoT SDK. It essentially plays the part of a microcontroller, and so anything we accomplish here can be done with a microcontroller or any other compute device. In the final section of this demonstration we will discuss some of the additional considerations for a similar setup in an actual industrial setting.
+<div align="center">
+	<img height="200" src="images/iotaws_overview.png" alt="Data Engineering Cookbook">
+	<img height="200" src="images/hardware_setup.jpg" alt="Data Engineering Cookbook">
+  <br>
+  Schematic of the setup we are emulating in this demonstration and a picture of the actual hardware I used for developing the examples.
+</div>
+
 # Registering the Sensor in IoT Core
 Before we can start connecting a sensor to AWS, we need to register the sensor or system as a so-called Thing in AWS IoT Core. The docs have a [getting started guide](https://docs.aws.amazon.com/iot/latest/developerguide/register-device.html "AWS IoT docs") which is pretty good. Follow the guide, but at the end of it, make sure you have the following:
 * A device certificate file
@@ -130,26 +137,26 @@ Here is our bare-bones script for connecting and publishing to AWS IoT.
 from AWSIoTPythonSDK.MQTTLib import AWSIoTMQTTClient
 import time
 
-# Pass in values for clientID, host, port, and paths to certificates
+# We will just hardcode the default port here, you might want a different one
 port = 8883 # default
 
-# Init AWSIoTMQTTClient
+# Initialise the AWS IoT MQTT client
 myAWSIoTMQTTClient = AWSIoTMQTTClient(clientId)
 myAWSIoTMQTTClient.configureEndpoint(host, port)
 myAWSIoTMQTTClient.configureCredentials(rootCAPath, privateKeyPath, certificatePath)
 
-# AWSIoTMQTTClient connection configuration
+# Configure the client
 myAWSIoTMQTTClient.configureAutoReconnectBackoffTime(1, 32, 20)
 myAWSIoTMQTTClient.configureOfflinePublishQueueing(-1)  # Infinite offline Publish queueing
-myAWSIoTMQTTClient.configureDrainingFrequency(2)  # Draining: 2 Hz
+myAWSIoTMQTTClient.configureDrainingFrequency(2)  # 2 Hz
 myAWSIoTMQTTClient.configureConnectDisconnectTimeout(10)  # 10 sec
 myAWSIoTMQTTClient.configureMQTTOperationTimeout(5)  # 5 sec
 
-# Connect and subscribe to AWS IoT
+# Connect to AWS IoT
 myAWSIoTMQTTClient.connect()
 time.sleep(2)
 
-# Publish to the same topic in a loop forever
+# Publish to the same topic in an eternal loop
 loopCount = 0
 while True:
     message = {}
@@ -162,7 +169,7 @@ while True:
     loopCount += 1
     time.sleep(5)
 ```
-The script [simple_publishing.py](https://github.com/AnHosu/iot_poc/blob/master/simple_publishing.py) is a full working example using the BME680 sensor. I can be called as follows
+The script [simple_publishing.py](simple_publishing.py) is a full working example using the BME680 sensor. I can be called as follows
 ```bash
 python simple_publishing.py -e <your aws iot endpoint> -r <file containing root certificate> -c <file containing device certificate> -k <file containing private key> -id <a client ID> -t <the topic to publish to>
 ```
@@ -176,10 +183,40 @@ Published topic bme680/temperature: {"status": "success", "timestamp_utc": "2020
 Published topic bme680/temperature: {"status": "success", "timestamp_utc": "2020-02-15T16:43:18.519356Z", "value": 21.57999999999999, "sequence": 27}
 ```
 But the most interesting part, of course, is whether the data gets to AWS. Let us say that we published to the topic `BME680/temperature`. We can open the AWS Console, go to IoT Core, and find the Test tab. Here we can subscribe to a topic. When I type in the topic `BME680/temperature`, 
-![test client](https://github.com/AnHosu/iot_poc/blob/master/images/aws_iot_test_simple_publish.PNG)
+![test client](images/aws_iot_test_simple_publish.PNG)
 I get the messages sent from the Pi.
-![test client](https://github.com/AnHosu/iot_poc/blob/master/images/aws_iot_message_simple_publish.PNG)
+![test client](images/aws_iot_message_simple_publish.PNG)
 Congratulations, you are now publishing to AWS IoT! From here the messages can be redirected to whereever you want using AWS SNS, for instance to AWS Kinesis.<br>
-# Application
-In real life would you fire up a Raspberry PI running Python just to extract and publish data from a single sensor? No, probably not. In a real life setting, if you just wanted to publish data from a single sensor, you might use a microcontroller instead.<br>
-On the other hand, if you have hundreds of sensors that you want to query and publish, a Raspberry Pi will not be enough. Instead you might want to use a proper gateway device, like CloudRail along with ethernet modules like IO-Link.
+# In Production
+This section is not part of the demonstration as such. It is but a short discussion of some of the considerations we have to take when bringing an IoT device to production in a manufacturing environment and how to improve upon the example to make it production ready.
+## Hardware Setup
+In real life would you fire up a Raspberry PI running Python just to extract and publish data from a single sensor? No, probably not. In a real life setting, if you just wanted to publish data from a single sensor, you might use a microcontroller instead. On the other hand, if you are in an industrial setting have hundreds of sensors that you want to query and publish, a Raspberry Pi will not be enough. Instead you might want to use proper gateway devices and controller modules. There are multiple options and suppliers of this type of hardware components and which you choose all depends on your specific requirements for ease of installation, configurability, and data quality.<br>
+No matter what kind of hardware you have, your gateway device still needs to run some bit of software that gathers and publishes data to consumer applications. Many hardware suppliers also offer proprietary data feeders and even analytics, but now you know how to write your own simple data feeder using the AWS IoT SDK for Python.
+## Script Improvement
+The focus for this demonstration was to demonstrate how to quickly get started publishing data. Whether we use a microcontroller or a large server as our gateway device, we will want a bit more functionality for our script. Here are a few examples of what additional considerations we might take before deploying the device to production.
+### Logging
+All sorts of expected and unexpected stuff will happen in production, and it is at least nice to have logs telling you what happened. The AWS IoT SDK actually comes with a [sample](https://github.com/aws/aws-iot-device-sdk-python/blob/master/samples/basicPubSub/basicPubSub.py) script containing an example of logging:
+```python
+import logging
+logger = logging.getLogger("AWSIoTPythonSDK.core")
+logger.setLevel(logging.DEBUG) # You might want to pass logging level to your script
+streamHandler = logging.StreamHandler()
+formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+streamHandler.setFormatter(formatter)
+logger.addHandler(streamHandler)
+```
+Also do not forget to add logging for the interaction with your sensor(s).
+### Error Handling
+Besides logging loggging unexpected events, we might also want to automatically handle some of them and avoid crashes that need manual attention. In the example we created above, two parts in particular are susceptible to errors; connecting the MQTT client to AWS and querying the sensor.<br>
+The connection might fail for several reasons, but a common one is that multiple devices try to reconnect at the same time after a restart of the process they are monitoring. In this case, nothing is wrong as such, and we can just have the devices retry the connection. We will want to introduce a bit of randomness into that process to avoid creating another bottlenect. An elegant way to implement such retrying is with progressive backoff logic, and the AWS IoT SDK actually includes a module to do just that.<br>
+In the example script, whenever I fail to retrieve a value from my BME680 air quality sensor, I just generate a message with a None value. Depending on your application, you might want to do something different. In another demonstration, we will have a look at [implementing a Shadow](shadow.md "Shadow demonstration") for our device. The Shadow can act as an intermediary between the data feed and an application, ensuring that simulations and machine learning models always have the latest readings, while the live data feed contains the full diversity of values and failed readings.
+### Remote Configuration
+One challenge we face when creating new data streams is specifying what data we need and how often we want to sample it. The dilemma is that we do not want to store to much data that will not be used but, on the other hand, to create good simulations or models, we need a good bit of historical data. What strategy to pursue is a business question but it behooves us as developers to allow for flexibility and build dials that allow us to adjust the tradeoff between cost and data quality/quantity. So let us tink of an example of this.<br>
+At the end of the publishing loop, we tacitly added a line, `time.sleep(5)`, that ultimately determines how often we query our sensor and publish the data. If we double that time, we halve the amount of data and potentially also halve our exenses for data storage on this variable. Before the applications are in place, however, it is not really clear how often we would like to sample. We can make an educated guess to get it started but, at the end of the day, we want to be able to change it. So it seems a poor idea to hardcode it like we did for this example. Indeed, for the [next demonstration](pubsub.md "Pulish and subscribe demo") we will explore how to develop a dynamic device that is remotely configurable.
+## Device Lifecycle
+During the demonstration, we manually provisioned certificates for our device and started the script from the command line. For production purposes, especially if we have hundreds of devices, we might want to have a more rigid device lifecycle.
+### Start up and restarts
+In a production setting, we will not want to go and restart the script manually each time there is an issue or our device restarts. This obviously becomes more relevant as the number of devices increases. If your gateway device runs Linux, we can just create a custom systemd to run our data feeder script as a service on boot. For a large fleet of devices we might want to consider introducing some randomness into the intitial connection requests to prevent a situation where all devices attempt to reconnect simultaneaously after an outage.
+### Certificates and security
+It is possible to get [more advanced](https://aws.amazon.com/blogs/iot/provisioning-with-a-bootstrap-certificate-in-aws-iot-core/ "bootstrap certificate demonstration") about provisioning certificates for devices. At the very least, we will want to script the provisioning process.<br>
+Even when securely provisioned and deployed, it is still important to consider the security of the certificates. The certificates effectively allow some interaction with your AWS account and should an ill intentioned actor acquire access to these certificates they effectly gain free access to that functionality. AWS best practice is to use [least privilege](https://docs.aws.amazon.com/IAM/latest/UserGuide/best-practices.html "IAM Best Practices") policies.<br>
