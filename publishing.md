@@ -11,8 +11,8 @@ while true
 ```
 For the demonstration we will be using the Bosch BME680 air quality sensor connected to a Raspberry Pi model 3B. The BME680 does four different measurements, but for this case we will only be measuring and publishing the temperature. The Pi is just there to query the sensor and run the AWS IoT SDK. It essentially plays the part of a microcontroller, and so anything we accomplish here can be done with a microcontroller or any other compute device. In the final section of this demonstration we will discuss some of the additional considerations for a similar setup in an actual industrial setting.
 <div align="center">
-	<img height="200" src="images/iotaws_overview.png" alt="Data Engineering Cookbook">
-	<img height="200" src="images/hardware_setup.jpg" alt="Data Engineering Cookbook">
+	<img height="200" src="images/iotaws_overview.png" alt="IoT overview">
+	<img height="200" src="images/hardware_setup.jpg" alt="Hardware setup">
   <br>
   Schematic of the setup we are emulating in this demonstration and a picture of the actual hardware I used for developing the examples.
 </div>

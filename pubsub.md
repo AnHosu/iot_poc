@@ -12,10 +12,17 @@ while true
     pack it up
     publish it
 ```
+For the demonstration are once again using the Bosch BME680 air quality sensor connected to a Raspberry Pi model 3B. The BME680 does four different measurements, and we will utilise the temperature, pressure, and humidity sensing capabilities. The Pi is just there to query the sensor and run the AWS IoT SDK. It essentially plays the part of a microcontroller, and so anything we accomplish here can be done with a microcontroller or any other compute device. In the final section of this demonstration we will discuss some of the additional considerations for a similar setup in an actual industrial setting.
+<div align="center">
+	<img height="200" src="images/iotaws_pubsub.png" alt="pubsub overview">
+  <br>
+  Schematic of the setup we are emulating in this demonstration.
+</div>
+
 Connecting to AWS IoT and publishing messages were covered in the [previous](https://github.com/AnHosu/iot_poc/blob/master/publishing.md "simple publishing") demonstration. In this demonstration, we focus on subscribing to messages and combining publishing and subscribing within one client.
 # Registering the Sensor in IoT Core
-Just as it is the case with publishing, we need to register the device that will subscribe to messages. We can use the same Thing and certificate as before, but we need to change the policy to allow subscription through using that certificate. 
-For subscription to work, we need to add two additional statements to the policy. We need to allow `iot:Subscribe` to a topic filter and allow `iot:Receive` for a specific topic. The distinction between topic and topic filter can seem a little nebulous, but imagine a manufacturing line with hundreds of sensors publishing to topics with the prefix `factoryA/line22`. Then we might create a policy that allows subscription to all the topics `factoryA/line22/*`, where the asterisk is a wildcard, and policies that allow receiving of messages to specific topics such as `factoryA/line22/milling/torque`. 
+Just as it is the case with publishing, we need to register the device that will subscribe to messages. We can use the same Thing and certificate as in the [previous demonstration](publishing#registering-the-sensor-in-iot-core), but we need to change the policy to allow subscription through using that certificate. 
+For subscription to work, we need to add two additional statements to the policy. We need to allow `iot:Subscribe` to a topic filter and allow `iot:Receive` for a specific topic. The distinction between topic and topic filter can seem nebulous, but imagine a manufacturing line with hundreds of sensors publishing to topics with the prefix `factoryA/line22`. Then we might create a policy that allows subscription to all the topics `factoryA/line22/*`, where the asterisk is a wildcard, and policies that allow receiving of messages to specific topics such as `factoryA/line22/milling/torque`. 
 Here is an example of such a policy document that allows subscription and receiving to a single topic.
 ```json
 {
@@ -70,15 +77,15 @@ Like publishing, subscribing can be done with just one line of code. We just nee
 AWSIoTMQTTClient.subscribe(topic, 1, callback)
 ```
 The first argument is the topic to listen to. Note that the certificate provided to the client must have a policy that allows subscription to that specific topic.<br>
-The second argument is the Quality of Service, [just as for publishing](https://github.com/AnHosu/iot_poc/blob/master/publishing.md#quality-of-service-qos), 0 means at most once and 1 means at least once. Remember that now the roles are reversed, and the client we are configuring is the one that will have to send a confirmation of a message received. Fortunately that is all taken care of behind the scenes.<br>
-The third argument is a custom function that is called whenever a message is received on the topic. This function should follow the pattern `callback_function(client, userdata, message)`. `message` will then be an object containing the topic, `message.topic`, and the body, `message.payload`, of the message. The two variables `client` and `userdata` are there for compatibility of the callback stack. They are flagged for deprecation, and it is not recommended to rely on them. The simplest thing to do when receiving a message, save for doing nothing at all, would be to print the message. Such a function might look like this
+The second argument is the Quality of Service, [just as for publishing](publishing.md#quality-of-service-qos), 0 means that the message is delivered at most once and 1 means at least once. Remember that now the roles are reversed, and the client we are configuring is the one that will receive the message have to send a confirmation of a message received. Fortunately that is all taken care of behind the scenes in the client we are configuring.<br>
+The third argument is a custom function that is called whenever a message is received on the topic. This function should follow the pattern `callback_function(client, userdata, message)`. `message` will then be an object containing the topic, `message.topic`, and the body, `message.payload`, of the message. The two variables `client` and `userdata` are there for compatibility of the callback stack; they are flagged for deprecation, and it is not recommended to rely on them. The simplest thing to do when receiving a message, save for doing nothing at all, would be to print the message. Such a function might look like this
 ```python
 def callback_function(client, userdata, message):
     print("Received a new message:\n{0}".format(message.payload))
     print("from topic:\n{0}".format(message.topic))
 ```
 In the next section, we will use this function to do cool things.<br>
-The subscription can be set up as soon as connection between the client and AWS IoT is established. The client will then listen for any published messages for as long as it lives or until the subscription is terminated. This also means that we do not have to listen in an infinite loop like we were publishing in an infinite loop earlier.<br>
+The subscription can be set up as soon as connection between the client and AWS IoT is established. The client will then listen for any published messages for as long as it lives or until the subscription is terminated. This also means that we do not have to listen in an infinite loop like during publishing.<br>
 With this, we have everything needed to set up a subscription:
 ```python
 # Configure client and connect
@@ -202,4 +209,22 @@ while True:
         myAWSIoTMQTTClient.publish(topic, messageJson, 1)
         print('Published topic %s: %s\n' % (topic, messageJson))
 ```
-The whole script is [here](https://github.com/AnHosu/iot_poc/blob/master/simple_pubsub.py "simple pubsub example"). When run, it will start to listen to the topic subscibed to. Once it receives a message with instructions it will start querying the sensor as instructed and publish. This way we can toggle between different sensors and even shut off messages when we do not need them and save some money.
+The whole script is [here](simple_pubsub.py "simple pubsub example"). When run, it will start to listen to the topic subscibed to. Once it receives a message with instructions it will start querying the sensor as instructed and publish. This way we can toggle between different sensors and even shut off messages when we do not need them and save some money.<br>
+This might not be exactly the thing that you want your device to do, but now you have the building blocks to create whatever response you want. As a challenge, why not try to set up a topic that controls how often values are published from the device? With such functionality, you could adjust the tradeoff between storage cost and data granularity over time.
+# In Production
+Besides the considerations mentioned in the [previous demonstration](publishing.md#in-production), a few additional considerations apply now that we are able to establish two way communication with our devices in the IoT.
+## Applications
+First the fun part. What might we actually do with this added capability?
+### Alternate data frequency
+If you store and process less data, it will cost you less but will also give the data scientists less of that precious data paydirt. You might want to change the frequency of the data according to current business priorities. You will almost definitely want to change the rate to respond to the process. A simple on/off switch for when the process is not running will work wonders. I would, however, love to see a combined IoT and analytics application that chooses the sampling frequency based on variance in the data and automatically adjusts sampling accordingly.
+### Have an equipment-debugging mode
+The idea of a debugging mode is common in digital applications. IoT means brining the digital world to our physical equipment. Imagine having a debugging mode for our manufacturing equipment. Specifically, this could be a toggleable mode with telemetry from additional sources and at a high frequency.
+### Respond to low-frequency changes
+Control loop managed by PLCs do a great job of keeping a process in control and running smoothly and continuosly. One thing they do not do, however, is respond well to low frequency changes and business-induced changes. Think of a batch changeover or the change between product variants - it takes time and effort to get the equipment running smoothly again. If you have actuating devices as part of the IoT you can start having your manufacturing equipment respond to business priorities or just deal with changes that the PLC does not consider. An example could be an automatic change of settings on a change of product variant according to the predictions of a simulation or a model.
+## Security
+If you are in manufacturing or some other regulated context, it might sound scary to have a two way communication between your site and the cloud. In all fairness, this could pose a security risk, the magnitude of which depends on the extend of the liberties given to the IoT and connected applications. As developers, there are a number of considerations we can make to increase the robustness of the IoT and lessen the burden on ourselves when we maintain the application. This is by no means a full list, but just a few obvious starting points.
+### Do not couple control loop and IoT
+Limit the power of actions
+Reserved topics for action commands
+Read about security best practices
+## Topic Management
