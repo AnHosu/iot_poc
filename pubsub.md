@@ -224,7 +224,13 @@ Control loop managed by PLCs do a great job of keeping a process in control and 
 ## Security
 If you are in manufacturing or some other regulated context, it might sound scary to have a two way communication between your site and the cloud. In all fairness, this could pose a security risk, the magnitude of which depends on the extend of the liberties given to the IoT and connected applications. As developers, there are a number of considerations we can make to increase the robustness of the IoT and lessen the burden on ourselves when we maintain the application. This is by no means a full list, but just a few obvious starting points.
 ### Do not couple control loop and IoT
-Limit the power of actions
-Reserved topics for action commands
-Read about security best practices
-## Topic Management
+The end goal of our IoT application might be a kind of outer automation that responds to rare changes and optimises business parameters, but coupling your IoT with quality critical process control might not be a good idea, at least right away. Remember that even though your vision camera is not directly connected to your gateway device, you might still be able to get that delicious data by reading it from a database associated with the vision system.
+### Limit the power of actions
+Should someone with malicious content get access to publishing to a topic that initiates actions in the our gateway devices they will only be able to cause as much damage as we allow.<br>
+For one of my first setup, I made my device run any bash command sent from the cloud. This is a fun exercise, but a very bad idea in a real manufactuing setting.
+### Reserved topics for action commands
+One thing, I have found useful is to use seperate topic hierarchies for topics that are intended for publishing data and topics that are intended for triggering work or actions.<br>
+We have [previously](publishing.md#topics) discussed using hierarchies of topics to structure data published from a manufacturing site. If you have a topic hierarchy like `factoryA/line22/milling/torque`, it might be tempting to make the action topic something like `factoryA/line22/milling/action`. This could be a bad idea, since it is easy to create a policy like `factoryA/line22/*` that allows access to publishing and action topics. If instead we make topics like `action/factoryA/line22/milling` then at least it is more difficult to make policy mistakes while still keeping some of the hierarchical structure.<br>
+Even without considering mistakes, poor topic management can quickly create a weak spot for your IoT both in terms of security and developer friendliness. AWS does not manage your topics, so make sure you do it.
+### Read about security best practices
+[AWS documentation](https://docs.aws.amazon.com/iot/latest/developerguide/security.html "AWS IoT Security Docs") is quite extensive and has better explanations and recommendations for security than I could ever conceive. Make sure to stay on top of current security best practices.
