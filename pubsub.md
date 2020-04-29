@@ -1,5 +1,5 @@
 # Publishing and Subscribing with AWS IoT
-In this demonstration, we will add upon the [previous](https://github.com/AnHosu/iot_poc/blob/master/publishing.md "simple publishing") tutorial by having our gateway device, the Raspberry Pi, subscribe to messages on a topic. With publishing, the information flow is from the device to AWS IoT, but with subscribing, the flow is reversed to be from AWS IoT to the client we configure. As we will see, the ability to subscribe as well as publish, is extremely useful for structuring and managing devices remotely.<br>
+In this demonstration, we will add upon the [previous](https://github.com/AnHosu/iot_poc/blob/master/publishing.md "simple publishing") tutorial by having our gateway device, the Raspberry Pi, subscribe to messages on a topic. With publishing, the information flow is from the device to AWS IoT, but with subscribing, the flow is reversed to be from AWS IoT to the client we configure to our device. As we will see, the ability to subscribe as well as publish, is extremely useful for structuring and managing devices remotely.<br>
 In general terms, we want our device to do the following
 ```
 prepare the sensor
@@ -228,9 +228,9 @@ The end goal of our IoT application might be a kind of outer automation that res
 ### Limit the power of actions
 Should someone with malicious content get access to publishing to a topic that initiates actions in the our gateway devices they will only be able to cause as much damage as we allow.<br>
 For one of my first setup, I made my device run any bash command sent from the cloud. This is a fun exercise, but a very bad idea in a real manufactuing setting.
-### Reserved topics for action commands
+### Topic management
 One thing, I have found useful is to use seperate topic hierarchies for topics that are intended for publishing data and topics that are intended for triggering work or actions.<br>
 We have [previously](publishing.md#topics) discussed using hierarchies of topics to structure data published from a manufacturing site. If you have a topic hierarchy like `factoryA/line22/milling/torque`, it might be tempting to make the action topic something like `factoryA/line22/milling/action`. This could be a bad idea, since it is easy to create a policy like `factoryA/line22/*` that allows access to publishing and action topics. If instead we make topics like `action/factoryA/line22/milling` then at least it is more difficult to make policy mistakes while still keeping some of the hierarchical structure.<br>
-Even without considering mistakes, poor topic management can quickly create a weak spot for your IoT both in terms of security and developer friendliness. AWS does not manage your topics, so make sure you do it.
+Even without considering mistakes, poor topic management can quickly create a weak spot for your IoT both in terms of security and developer friendliness. AWS does not manage your topics, so make sure you do it. That being said, the AWS Device Shadow functionality might just be what you need to make this much simpler. Fortunately, Shadows are the subject of the [next demonstration](shadow.md).
 ### Read about security best practices
 [AWS documentation](https://docs.aws.amazon.com/iot/latest/developerguide/security.html "AWS IoT Security Docs") is quite extensive and has better explanations and recommendations for security than I could ever conceive. Make sure to stay on top of current security best practices.
