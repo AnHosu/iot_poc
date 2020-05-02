@@ -23,6 +23,7 @@ from AWSIoTPythonSDK.exception.AWSIoTExceptions import DiscoveryInvalidRequestEx
 
 ### Setup for my particular sensor
 import bme680
+import smbus2
 
 try:
     sensor = bme680.BME680(bme680.I2C_ADDR_PRIMARY,smbus2.SMBus(1))
@@ -33,8 +34,8 @@ sensor.set_temperature_oversample(bme680.OS_8X)
 sensor.set_filter(bme680.FILTER_SIZE_3)
 ### Sensor stuff done	
 	
-MAX_DISCOVERY_RETRIES = 10
-GROUP_CA_PATH = "./groupCA/"
+# Parameters
+GROUP_CA_PATH = "./groupCA/" # Folder for saving gg group CA cert
 
 # Read in command-line parameters
 parser = argparse.ArgumentParser()
@@ -68,13 +69,30 @@ coreList = discoveryInfo.getAllCores()
 groupId, ca = caList[0]
 coreInfo = coreList[0]
 coreConnectivityInfoList = coreInfo.connectivityInfoList
+
+# Since the MQTT client expects a certificate file we have to
+#  put the group certificate authority into a file and save
+#  the path
+groupCA = GROUP_CA_PATH + groupId + "_CA_" + str(uuid.uuid4()) + ".crt"
+if not os.path.exists(GROUP_CA_PATH):
+    os.makedirs(GROUP_CA_PATH)
+groupCAFile = open(groupCA, "w")
+groupCAFile.write(ca)
+groupCAFile.close()
+    
+# Initialise the MQTT client
+myAWSIoTMQTTClient = AWSIoTMQTTClient(clientId)
+myAWSIoTMQTTClient.configureCredentials(groupCA, privateKeyPath, certificatePath)
+
 # Loop over and try connection with each set of host name and port
+connected = False
 for connectionInfo in coreConnectivityInfoList:
     coreHost = connectionInfo.host
     corePort = connectionInfo.port
     myAWSIoTMQTTClient.configureEndpoint(coreHost, corePort)
     try:
         myAWSIoTMQTTClient.connect()
+        connected = True
         break
     except BaseException as e:
         pass
