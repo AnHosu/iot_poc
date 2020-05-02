@@ -70,7 +70,7 @@ coreInfo = coreList[0]
 coreConnectivityInfoList = coreInfo.connectivityInfoList
 # Loop over and try connection with each set of host name and port
 for connectionInfo in coreConnectivityInfoList:
-	coreHost = connectionInfo.host
+    coreHost = connectionInfo.host
     corePort = connectionInfo.port
     myAWSIoTMQTTClient.configureEndpoint(coreHost, corePort)
     try:
