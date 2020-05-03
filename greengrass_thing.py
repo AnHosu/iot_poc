@@ -120,4 +120,4 @@ while True:
     myAWSIoTMQTTClient.publish(topic, messageJson, 0)
     print('Published topic %s: %s\n' % (topic, messageJson))
     loopCount += 1
-    time.sleep(5)
+    time.sleep(10)
