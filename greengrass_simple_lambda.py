@@ -1,9 +1,19 @@
+"""
+Created on Sat May 02 13:00:00 2020
+
+@author: AnHosu
+
+This is a simple example of a lambda function to be deployed
+ to Greengrass core. It accompanies the demonstration at:
+ https://github.com/AnHosu/iot_poc/blob/master/greengrass.md
+"""
 import greengrasssdk
 import logging
+import json
 
-client = greengrasssdk.client('airq-core')
+REPUB_TOPIC = 'republish/reading'
 
-REPUB_TOPIC = 'republish/temperature'
+client = greengrasssdk.client('iot-data')
 
 def get_topic(context):
     try:
@@ -14,10 +24,11 @@ def get_topic(context):
 
 def function_handler(event, context):
     try:
-        input_topic = get_input_topic(context)
-        input_message = get_input_message(event)
+        input_topic = get_topic(context)
+        message = event
+        message['input_topic'] = input_topic
         logging.info(event)
     except Exception as e:
         logging.error(e)
-    client.publish(topic=REPUB_TOPIC, payload=event)
+    client.publish(topic=REPUB_TOPIC, payload=json.dumps(message))
     return
