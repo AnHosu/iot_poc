@@ -1,4 +1,4 @@
-# Using Greengrass to Connect Things
+# Build an Edge with Greengrass
 It is time to create an edge, to take advantage of the compute that is available right where the data is gathered. Even if you use the AWS IoT services, there are several ways and plenty of 3<sup>rd</sup> party software you could apply for device management and creating an edge. The AWS offering is Greengrass, a piece of software running on your device and an accompanying cloud service. In this demonstration, we introduce key concepts in the context of an IoT edge using Greengrass.<br>
 In this demonstration we will
 - Install AWS Greengrass Core on our Raspberry Pi
@@ -15,7 +15,7 @@ Conceptually, the setup for this demonstration is a bit different from that of t
 </div>
 
 Notice that the BME680 air quality sensor is right next to the CPU of the Pi. The edge calculation we make will attempt to correct the temperature reading from the BME680 by substracting an amount based on the current CPU temperature.
-# Installing and Configuring Greengrass
+# Install and Configure Greengrass
 The AWS Greengrass service consists of two main elements. Greengrass Core is a piece of software that is installed on your gateway device, in our case, the Raspberry Pi. We loosely refer to the gateway device and Greengrass Core as an 'Edge'. The software is configured to communicate with Greengrass in AWS IoT, which constitutes the other element. We loosely refer to AWS IoT as the 'Cloud' part.<br>
 The process of installing Greengrass depends a lot on your device and its operating system, but the docs contain a [general guide](https://docs.aws.amazon.com/greengrass/latest/developerguide/module2.html "install Greengrass"). I used apt to install Greengrass on the Pi. When following this guide, you will
 - [Register the Greengrass Core](https://docs.aws.amazon.com/greengrass/latest/developerguide/gg-config.html) in AWS IoT. Remember to download the package with certificates onto your device
@@ -48,14 +48,15 @@ Greengrass Core will need to be running on your device in order to establish a c
 During the setup, we created a Greengrass Group. The Group will eventually consist of one core device (in our case the Pi) and a variety of entities associated with the core. Our eventual goal is to have data sent from a thing that is associated with the core to the cloud. To reach that ambition we need to configure the thing, i.e. our sensor, a Lambda function that will move the data to the cloud, and subscriptions. We will go through each of these components in turn, starting with the thing.<br>
 <div align="center">
 	<img width=500 src="images/greengrass_group.png" alt="iot setup">
+    <br>
     This is the architecture we are building, albeit with just one sensor.
 	<br>
 </div>
 
-## Associating a Thing with a Greengrass Group
+## Associate a Thing with a Greengrass Group
 To associate our thing, the sensor, with the core, we follow the [guidelines](https://docs.aws.amazon.com/greengrass/latest/developerguide/device-group.html "register a thing in Greengrass"), and go to AWS IoT > Greengrass > Groups, choose the group we just created, go to Devices, and click "Add Device". The creation procedure is similar to the procedure for any other Thing registered in AWS IoT. Indeed, after registering the device, you will be able to find it under the AWS IoT > Manage tab and you are even able to associate existing devices with a core. I actually reused the device from the [publishing](publishing.md#registering-the-sensor-in-iot-core) demonstration for this demo.<br>
 Note that before the device is fully associated with the core, the change needs to be deployed. Later we will go through how to do this, but feel free to go ahead and do it right away, if you know how.
-## Connecting a Device to Greengrass Core
+## Connect a Device to Greengrass Core
 In this section, we will setup up a script that connects to the core with the eventual goal of publishing readings from the sensor to a topic. The messages will never reach the cloud, however. Instead, the messages are published into the core device on a topic that only lives within the the Greengrass group. The logic is something along the lines of
 ```
 setup sensor
@@ -164,7 +165,7 @@ for connectionInfo in coreConnectivityInfoList:
         pass
 ```
 This is the most condensed code needed to implement discovery, but in production you will want to add much more logging, error handling, retries for discoveries, and other frills. See the section below on Greengrass in production for a further discussion on how to improve the thing script for a real world scenario.
-### Publishing in the Greengrass group
+### Publish inside the Greengrass Group
 Now that our thing is connected to the core in its Greengrass group we can start publishing data to a local topic. From the point of view of our thing, this works just like publishing to a topic on AWS IoT. Using the client we configured:
 ```python
 myAWSIoTMQTTClient.publish(topic, messageJson, 1)
@@ -174,33 +175,33 @@ With this, we have everything needed to run our thing running. The [example scri
 Once again, it is worth noting that if you have not deployed after associating the thing with the core, then your core device does not yet know that it is allowed to associate with the thing and the discovery process will fail. Specifically, you will get a `DiscoveryDataNotFoundException`. It happens to me all the time, but all we need to do is deploy the change. I will show you how in a moment.<br>
 Even assuming that the Greengrass core is running and the thing script is publishing values, not much is happening yet. If you go to the AWS IoT test test client in the console and subscribe to the topic that the thing is publishing to, there should be no values flowing in, as nothing is being sent there. In order for us to see data flowing into the cloud, we have to grab the data in Greengrass Core and pass it on to a new topic that is published to the cloud.<br>
 The way this is done with Greengrass is by defining a Lambda function in AWS and deploying onto the core.
-## Writing Lambda Functions for Greengrass
-Lambda functions are a huge subject on its own and, for the purposes of this demonstration, we will assume at least some fammiliarity with the concept. We will still walk through each step needed to writing a lambda for the edge, but if you are new to AWS Lambda, you might want to read the [getting started guide](https://docs.aws.amazon.com/lambda/latest/dg/getting-started.html "AWS Lambda getting started") to get a feel for the terminology. Lambda is a pretty cool service, and chances are that you will find it useful for plenty of other applications.<br>
+## Write Lambda Functions for Greengrass
+Lambda functions are a huge subject on its own and, for the purposes of this demonstration, we will assume at least some fammiliarity with the concept. We will still walk through each step needed to writing a Lambda for the edge, but if you are new to AWS Lambda, you might want to read the [getting started guide](https://docs.aws.amazon.com/lambda/latest/dg/getting-started.html "AWS Lambda getting started") to get a feel for the terminology. Lambda is a pretty cool service, and chances are that you will find it useful for plenty of other applications.<br>
 ### Lambda Code
-The first lambda we will write is very simple. It should take an incoming MQTT message, parse the message, and republish it to a new topic to AWS IoT. So something along the lines of
+The first Lambda we will write is very simple. It should take an incoming MQTT message, parse the message, and republish it to a new topic to AWS IoT. So something along the lines of
 ```
 get incoming message
 extract body of message
 republish body to new topic
 ```
-Very linear, if we assume that the code is only run when there is an incoming message. This is exactly the power of lambda. We can make a MQTT message, such as the ones we publish from the sensor, trigger a lambda function. In the next section, we will go through how to set up the trigger. For now, just assume that the code we write is triggered each time there is a message.<br>
-A lambda always has a function handler that contains the details of whatever triggered the function:
+Very linear, if we assume that the code is only run when there is an incoming message. This is exactly the power of Lambda. We can make a MQTT message, such as the ones we publish from the sensor, trigger a Lambda function. In the next section, we will go through how to set up the trigger. For now, just assume that the code we write is triggered each time there is a message.<br>
+A Lambda always has a function handler that contains the details of whatever triggered the function:
 ```python
 def function_handler(event, context):
     # event holds the message body
     # context holds the incoming topic etc.
 ```
 You can name the function whatever you want, just as long as you remember that name and give it the input objects event and context.<br>
-The event object holds the body of the MQTT message that triggered the lambda. This is essentially the json we want to pass on to a new topic.<br>
-The context object holds all sorts of information on what triggered the lambda, including the topic of the message. We do not really need any of this information now, so we can just ignore it.<br>
+The event object holds the body of the MQTT message that triggered the Lambda. This is essentially the json we want to pass on to a new topic.<br>
+The context object holds all sorts of information on what triggered the Lambda, including the topic of the message. We do not really need any of this information now, so we can just ignore it.<br>
 In order to republish to AWS IoT, we are, as usual, going to need an MQTT client. Remember though that we went through all sorts of trouble to connect the core to AWS IoT and that the core is running all the time, so there is no need to set up a new client and connection. Instead, we use one of the clients included in the [Greengrass SDK](https://github.com/aws/aws-greengrass-core-sdk-python "Greengrass Python SDK"):
-```
+```python
 import greengrasssdk
 
 client = greengrasssdk.client('iot-data')
 ```
-You do not have to install the SDK on your computer, but we will need to include it in our lambda. There are multiple client types included in the SDK, and since we are doing IoT stuff, we need the `iot-data` client.<br>
-Now we just need to decide on the topic to publish to. This needs to be a topic allowed in the policy for the thing. With that, we have everything needed for the lambda function:
+You do not have to install the SDK on your computer, but we will need to include it in our Lambda. There are multiple client types included in the SDK, and since we are doing IoT stuff, we need the `iot-data` client.<br>
+Now we just need to decide on the topic to publish to. This needs to be a topic allowed in the policy for the thing. With that, we have everything needed for the Lambda function:
 ```python
 import greengrasssdk
 
@@ -212,16 +213,16 @@ def function_handler(event, context):
     client.publish(topic=REPUB_TOPIC, payload=event)
     return
 ```
-This is all we need to republish. The full example with a few extra frills, such as adding the incoming topic to the output body, is [here](greengrass_simple_lambda.py "Simple Lambda example for Greengrass"). Let us now look at creating the actual lambda.
-### Creating a Lambda Function
-To create a lambda function, we navigate to the AWS Lambda console. Under 'Functions' we click 'Create Function'.<br>
+This is all we need to republish. The full example with a few extra frills, such as adding the incoming topic to the output body, is [here](greengrass_simple_lambda.py "Simple Lambda example for Greengrass"). Let us now look at creating the actual Lambda.
+### Create a Lambda Function
+To create a Lambda function, we navigate to the AWS Lambda console. Under 'Functions' we click 'Create Function'.<br>
 In the wizard, choose 'Author from scratch', give your function a name, and choose your Python runtime. I named mine 'repub_temp' and have been using Python 3.7 for the example. Then we click 'Create Function'. This might take a moment.<br>
 <div align="center">
 	<img src="images/lambda_create.png" alt="iot setup">
 	<br>
 </div>
 
-The next thing we need to do is to prepare our code for the lambda function. So leave the console for a little while and locate the Python script we just created. Now download the [Greengrass SDK](https://github.com/aws/aws-greengrass-core-sdk-python/tree/master/greengrasssdk) folder. You only need the 'greengrasssdk' folder, not the examples, docs, etc. Now package the Greengrass SDK and the Python script into a .zip.<br>
+The next thing we need to do is to prepare our code for the Lambda function. So leave the console for a little while and locate the Python script we just created. Now download the [Greengrass SDK](https://github.com/aws/aws-greengrass-core-sdk-python/tree/master/greengrasssdk) folder. You only need the 'greengrasssdk' folder, not the examples, docs, etc. Now package the Greengrass SDK and the Python script into a .zip.<br>
 <div align="center">
 	<img src="images/lambda_package.png" alt="iot setup">
 	<br>
@@ -245,7 +246,7 @@ Now go to 'Actions' again and select 'Create alias'. Give the alias a name and p
 	<br>
 </div>
 
-Now that our lambda has been fully defined, we need to associate it with the Greengrass core.
+Now that our Lambda has been fully defined, we need to associate it with the Greengrass core.
 ### Attach a Lambda to Greengrass
 Navigate to the Greengrass console. Go to 'Groups' and select your Greengrass group. Then go to the 'Lambdas' menu and click 'Add Lambda'.<br>
 <div align="center">
@@ -253,33 +254,33 @@ Navigate to the Greengrass console. Go to 'Groups' and select your Greengrass gr
 	<br>
 </div>
 
-Choose 'Use an existing Lambda function'. Select the lambda function we just created and click 'Next'. Select the alias we just created and click 'Finish'.<br>
-That is it for the lambda. Now the final piece of the puzzle is ensuring that data flows from the sensor to the lambda function and then from the lambda function to the cloud. This is done with subscriptions.
-## Configuring Subscriptions in Greengrass
-Subscriptions is the way to configure where what data goes inside the Greengrass group. They specify the pubsub verticies between the things and lambdas of the group and offer filtering capabilities.<br>
+Choose 'Use an existing Lambda function'. Select the Lambda function we just created and click 'Next'. Select the alias we just created and click 'Finish'.<br>
+That is it for the Lambda. Now the final piece of the puzzle is ensuring that data flows from the sensor to the Lambda function and then from the Lambda function to the cloud. This is done with subscriptions.
+## Configure Subscriptions in Greengrass
+Subscriptions is the way to configure where what data goes inside the Greengrass group. They specify the pubsub verticies between the things and Lambdas of the group and offer filtering capabilities.<br>
 To set up a subscription, go to the Greengrass console. Go to 'Groups' and select your Greengrass group. Then go to the 'Subscriptions' menu and click 'Add Subscription'.
 <div align="center">
 	<img src="images/greengrass_subscription_add.png" alt="iot setup">
 	<br>
 </div>
 
-When setting up at subscription we are asked to specify the source and the target. The source and target could be many things, including a specific device/thing, a lambda function, the cloud, or a Shadow. Subscriptions are one-way, so a two-way communication between two entities within the group would require two subscriptions.<br>
-For this demonstration specifically, we want to set up a subscription from our thing which generates and publishes data locally to the lambda function we created. The thing can be found under the 'Devices' tab and the function under the 'Lambdas' tab.<br>
+When setting up at subscription we are asked to specify the source and the target. The source and target could be many things, including a specific device/thing, a Lambda function, the cloud, or a Shadow. Subscriptions are one-way, so a two-way communication between two entities within the group would require two subscriptions.<br>
+For this demonstration specifically, we want to set up a subscription from our thing which generates and publishes data locally to the Lambda function we created. The thing can be found under the 'Devices' tab and the function under the 'Lambdas' tab.<br>
 Clicking 'Next' the first time will spawn a topic filter box. This is an optional filter you can specify to make data flows even more dynamic. I have given an example here, but it is not neccessary for the purposes of this demonstration. Click 'Next' again and 'Finish' to create the subscription.
 <div align="center">
 	<img src="images/greengrass_subscription_tolambda.png" alt="iot setup">
 	<br>
 </div>
 
-We need one more subscription, namely the one telling Greengrass that we are publishing data from the lambda function to the Cloud. We set up another subscription; this time setting the lambda function as the source and 'IoT Cloud' as the target. Again we can specify an optional filter.
+We need one more subscription, namely the one telling Greengrass that we are publishing data from the Lambda function to the Cloud. We set up another subscription; this time setting the Lambda function as the source and 'IoT Cloud' as the target. Again we can specify an optional filter.
 <div align="center">
 	<img src="images/greengrass_subscription_fromlambda.png" alt="iot setup">
 	<br>
 </div>
 
 Now all the pieces are in place. We are ready to deploy.
-## Deploying a Greengrass Group
-Right now, nothing is running on our gateway device except for the Greengrass daemon. Unless you have deployed along the way, none of the device configurations, lambda function, or subscriptions have made their way onto the core.<br>
+## Deploy a Greengrass Group
+Right now, nothing is running on our gateway device except for the Greengrass daemon. Unless you have deployed along the way, none of the device configurations, Lambda function, or subscriptions have made their way onto the core.<br>
 Before deploying, we should make sure that the Greengrass Daemon is actually running on our gateway device. From a shell on our device
 ```bash
 ps aux | grep -E 'greengrass.*daemon'
@@ -296,11 +297,11 @@ Now we are ready to deploy. Fortunately it is very simple to deploy everything w
 	<br>
 </div>
 
-## Putting Everything Together
+## Put Everything Together
 To get the example for this section to work, we need to do a few things in the correct order.
 1. Ensure that the device representing our sensor is associated with the core
-2. Ensure that the [lambda function](greengrass_simple_lambda.py) is defined and associated with the core
-3. Ensure that there is a subscription from the device to the lambda function and another subscription from the lambda function to the cloud
+2. Ensure that the [Lambda function](greengrass_simple_lambda.py) is defined and associated with the core
+3. Ensure that there is a subscription from the device to the Lambda function and another subscription from the Lambda function to the cloud
 4. Ensure that the Greengrass daemon is running
 5. Deploy everything
 6. Run the discovery and publishing [script](greengrass_thing.py) for the sensor device
@@ -309,15 +310,15 @@ We can run the script like this:
 ```bash
 python3.7 greengrass_thing.py -e <AWS IoT custom endpoint> -r <root CA> -c <thing certificate> -k <private key> -id <client ID> -t <local topic>
 ```
-And let us quickly look at whether it is working by going to the IoT test client. If we have done everythin correctly, we should not see any data published on the local topic from the sensor device. Rather, we should see data from the topic `republish/reading` topic that we defined in the lambda script. Let us see.
+And let us quickly look at whether it is working by going to the IoT test client. If we have done everythin correctly, we should not see any data published on the local topic from the sensor device. Rather, we should see data from the topic `republish/reading` topic that we defined in the Lambda script. Let us see.
 <div align="center">
 	<img src="images/greengrass_test.png" alt="iot setup">
 	<br>
 </div>
 
 It is indeed working!<br><br>
-Congratulations! You now know how to work with Greengrass and you have all the neccessary components to create your own Greengrass groups and create powerful IoTs. However, if you are interested and want to know why we went through so much trouble to connect our device, I have another small example demonstrating the concept and power of 'calculations on the edge'.
-# Doing Calculations on the Edge
+Congratulations! You now know how to work with Greengrass and you have all the neccessary components to create your own Greengrass groups and create powerful IoTs with edges. However, if you are interested and want to know why we went through so much trouble to connect our device through Greengrass, I have another small example demonstrating the concept and power of 'calculations on the edge'.
+# Do Calculations on the Edge
 Compared to [simple publishing](publishing.md), having a device publish its data through Greengrass might seem like a large unnecessary hassle. Indeed, sometimes it is, but as soon as your IoT starts to grow beyond a few devices, there will be headaches that are much more simple to solve when Greengrass and, in particular, Lambda is there.<br>
 In this example, we will demonstrate the utility of the setup through a simple example. I placed the BME680 air quality sensor quite close to the CPU, meaning that the temperature of the CPU will interfere with what I really want to measure; the temperature of the air. If we were to obtain the temperature of the CPU, we might be able to calcualte a compensated temperature that is more representative of the air temperature. A quick disclaimer before we begin: there are a plethora of ways to avoid or compensate for this particular problem, including extending the sensor away from the Pi or including the compensation logic in the feeder script, but for the sake of this example assume that we have no flexibility in terms of the hardware and are aiming for a high degree of flexibility and maintainability in the software we create.<br><br>
 Specifically, we will create a Lambda function that performs the compensation for us. We will go for something simple like
@@ -342,15 +343,15 @@ avg_cpu_temp = sum(cpu_temps)/float(len(cpu_temps))
 # Compensated temperature
 comp_temp = 2*input_temperature - avg_cpu_temp
 ```
-That is really all there is to it, and this is all we need to add to the previous example. The [full lambda function example](greengrass_sys_lambda.py) has a few extra frills such as error handing and logging. The next step is to define this lambda function and associate it with the Greengrass group. You could create a new lambda function, but I opted to update the lambda function we created in the previous section. To do so, open the function in the lambda console, insert the [code](greengrass_sys_lambda.py) and publish a new version. Then, from the 'Version' dropdown menu, select the alias we created earlier.
+That is really all there is to it, and this is all we need to add to the previous example. The [full Lambda function example](greengrass_sys_lambda.py) has a few extra frills such as error handing and logging. The next step is to define this Lambda function and associate it with the Greengrass group. You could create a new Lambda function, but I opted to update the Lambda function we created in the previous section. To do so, open the function in the Lambda console, insert the [code](greengrass_sys_lambda.py) and publish a new version. Then, from the 'Version' dropdown menu, select the alias we created earlier.
 <div align="center">
-	<img height=120 src="images/lambda_new_alias.png" alt="iot setup">
+	<img height=170 src="images/lambda_new_alias.png" alt="iot setup">
 	<br>
 </div>
 
-Scroll down a bit, find the 'Alias configuration', and point the alias to the version of the lambda we just created. Click 'Save' to save changes.<br>
-Before we deploy, the Lambda will need some additional configuring. Per default, any lambda will timeout after 3 seconds, but ours will be running for at least 8 seconds to get an average CPU temperature. Furthermore, lambda functions running in Greengrass to not have access to local resources under `/sys`. We will need to change these defaults.<br>
-Go to the Greengrass console and select the group. Under the Lambda menu, click the three dots in the upper right of the lambda function, we just modified and select 'Edit configuration'.
+Scroll down a bit, find the 'Alias configuration', and point the alias to the version of the Lambda we just created. Click 'Save' to save changes.<br>
+Before we deploy, the Lambda will need some additional configuring. Per default, any Lambda will timeout after 3 seconds, but ours will be running for at least 8 seconds to get an average CPU temperature. Furthermore, Lambda functions running in Greengrass to not have access to local resources under `/sys`. We will need to change these defaults.<br>
+Go to the Greengrass console and select the group. Under the Lambda menu, click the three dots in the upper right of the Lambda function, we just modified and select 'Edit configuration'.
 <div align="center">
 	<img src="images/greengrass_lambda_configure.png" alt="iot setup">
 	<br>
@@ -364,8 +365,8 @@ Set the timeout to 10 seconds and enable access to `/sys`.
 
 All that is left is to deploy the Greengrass group from the Greengrass console. The resulting output to the cloud should look exactly like before. This time around though, the temperature readings should look a bit more realistic.<br><br>
 Congratulations! You are now doing calculations on the edge. It might not feel like much, but consider how we might have gone about solving the problem in other ways.<br>
-We could have published CPU temperature readings to the cloud and done the calcualtions using lambda functions, SQL queries, or EC2 compute in the cloud. The cost of the additional storage and the cloud compute would make such a solution several times more expensive that what we just did.<br>
-We could have put the calculations directly in the feeder script. While this would cost slightly less than our solution, it increases the operational burden. Sensors and microcontrollers are generally less accessible, especially in a manufacturing context. With our solution we can manage the calculations in the cloud from the comfort of our chair or even home. If we wanted to start recording the temperature in Kelvins, all we would have to do is add the calculation to our lambda function and deploy the changes.<br><br>
+We could have published CPU temperature readings to the cloud and done the calcualtions using Lambda functions, SQL queries, or EC2 compute in the cloud. The cost of the additional storage and the cloud compute would make such a solution several times more expensive that what we just did.<br>
+We could have put the calculations directly in the feeder script. While this would cost slightly less than our solution, it increases the operational burden. Sensors and microcontrollers are generally less accessible, especially in a manufacturing context. With our solution we can manage the calculations in the cloud from the comfort of our chair or even home. If we wanted to start recording the temperature in Kelvins, all we would have to do is add the calculation to our Lambda function and deploy the changes.<br><br>
 This was a very simple example of edge calculations managed from the cloud. Greengrass is, however, capable of handling much more complex setups than what we just built. Specifically, it is even possible to deploy machine learning models that are trained in the cloud onto the edge. These advanced features of Greengrass are the subject of the next demonstration.
 # In Production
 This section is not part of the demonstration as such. It is but a short discussion of some of the considerations we have to take when bringing Greengrass to production in a manufacturing environment and how to improve upon the examples to make them production ready. Considerations from [previous demonstrations](publishing.md#in-production) still apply.
@@ -407,7 +408,7 @@ Test the service by rebooting the device and confirming that the Greengrass daem
 ```bash
 ps aux | grep -E 'greengrass.*daemon'
 ```
-## Connection retries and progressive backoff logic
+## Connection Retries and Progressive Backoff Logic
 Imagine the following situation. You have a couple of hundred sensors that connect to one or a few Greengrass core devices, and all run off of the same power supply. At one point, the power supply is switched off, maybe it is maintenance maybe it is an error, but after a while power returns and your sensors and their controllers reboot. You set up the controllers such that they will automatically try to reconnect with the core. This is fine, but suddenly the core is getting hundreds of connection requests within a few seconds, so the controllers are receiving errors. Now, obviously there is nothing wrong with the core devices; they are just getting too many requests, so we will want the controllers to retry the connection before giving up. However, we do not want to have them all retry at the same time lest we repeat the story again.<br>
 The idea behind progressive backoff logic is to keep retrying but waiting progressively longer for each retry as well as throwing a bit of randomness into the wait time. One type of backoff logic, exponential backoff, waits exponentially longer before each retry. Here is a bit of Python style pseudocode showing the basics of it
 ```python
