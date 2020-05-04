@@ -1,4 +1,4 @@
-# AWS Shadow Service Demonstration
+# Utilise Device Shadows
 The AWS IoT thing shadow service offers a lot of functionality and the possible applications are numerous and diverse. You can read all about the functions and possible applications in the [documentation](https://docs.aws.amazon.com/iot/latest/developerguide/iot-device-shadows.html "AWS thing shadow docs"). In this case we will not exemplify all of the functionality, rather we will get started using shadows with an example that is as simple in functionality as possible. Once we are done with this case we will not have built all that is possible with shadows but we will have come far enough to start understanding advanced functions and applications work.<br>
 We will try to do something like this
 ```
@@ -57,7 +57,7 @@ We will not use the desired field for this demonstration. We will just report th
     }
 }
 ```
-The `metadata`field holds information on when each of the values in the `state` field were updated. The field follows the sam schema as `state` and the information is given as a UTC timestamp, representing when the value was last updated.<br>
+The `metadata`field holds information on when each of the values in the `state` field were updated. The field follows the same schema as `state` and the information is given as a UTC timestamp, representing when the value was last updated.<br>
 The `version` field is a super useful feature. It is an integer that increases every time an update is made to the document, allowing applications and device to know whether their local copy is the latest.<br>
 The `timestamp` field indicates the UTC timestamp of when the update was transmitted from AWS IoT.<br>
 Fields that are set to Null are deleted from the shadow document rather than reporting the Null.
