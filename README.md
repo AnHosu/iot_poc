@@ -3,11 +3,11 @@
 * [Hardware Setup](README.md#the-hardware-setup)
 * [Cases](README.md#case-setups)
     * [Simple publishing](README.md#1-publish-industrial-data-with-aws-iot)
-    * [Publish and Subscribe](README.md#3-publish-and-subscribe)
-    * [Utilise thing shadows](README.md#2-utilise-thing-shadows)
+    * [Publish and Subscribe](README.md#2-publish-and-subscribe)
+    * [Utilise thing shadows](README.md#3-utilise-thing-shadows)
     * [Build an Edge with Greengrass](README.md#4-build-an-edge-with-greengrass)
-    * [Shadows, Greengrass, and ML models](README.mdc#5-advanced-greengrass-features)
-* [Introduction to AWS IoT](README.md#aws-iot)
+    * [Shadows, Greengrass, and ML models](README.md#5-advanced-greengrass-features)
+* [Introduction to AWS IoT](README.md#iot-with-aws-iot)
 
 # Introduction
 This repo is structured as an introduction to Industrial Internet of Things. On one hand it will be a simple introduction to how you might go about getting your sensor data from your sensor to the cloud. On the other hand, we will dive into advanced IoT concepts, so if you are looking for demonstrations of concepts like edge inference, fleet management, MQTT, and digital twins you have come to the right place.<br>
@@ -53,7 +53,7 @@ Let us start with the so called Things. In an industrial setting, a thing is oft
 Given this vague definition of things, an obvious question arises for those who have been in the manufacturing game for a while. Manufacturing processes are usually associated with process control loops. These include connecting key process parameters to a process logic controller (PLC) that in turn controls actuators to regulate the process. An example would be the flow of water through a pipe, measured by a flow sensor and regulated by the opening or closing of a valve. The question is: are these control loops also IoT? The answer is that they could be. The process parameters and the state of the valve are all potential things that when connected to the internet become things in the internet of things. The key difference between IoT and a control loop would be the internet connection. The PLC is there to do process control, not neccessarily to send or store data, and connecting it to the internet could be a major risk for the manufacturing process. In IoT we use dedicated devices to buffer and send data to storage in the cloud or somewhere else.<br>
 AWS is our cloud of choice for this tutorial. In AWS IoT Core, you can [register](https://docs.aws.amazon.com/iot/latest/developerguide/create-aws-thing.html "how to register a thing in AWS IoT Core") and manage your things. A thing is the highest level of granularity, and it makes sense to register each parameter you measure as a seperate thing. You can then aggregate and manage hierarchies of things using [groups and types](https://docs.aws.amazon.com/iot/latest/developerguide/iot-thing-management.html "about managing hierarchies of things").
 <div align="center">
-	<img width="480" height="270" src="images/iot_overview.png" alt="iot setup">
+	<img height="270" src="images/iot_overview.png" alt="iot setup">
 	<br>
 </div>
 
@@ -65,7 +65,7 @@ You are doing IoT for a reason. Maybe you are building a dashboard for the opera
 A digital twin is a record of the latest process parameters, such that the currently most reliable view of reality is always available for applications. The notion is similar to a database, the key difference being that this record only ever keeps the latest entry. With such a record you can design your application to do what it needs to do and even dynamically correct for old data without ever worrying about not having available data or waiting for data to appear, thus effectively decoupling the IoT and your application.<br>
 AWS IoT offers a functionality called shadows, which allows you to create a digital twin for your process. Each thing registered in AWS IoT automatically has a shadow, which is a json document containing the latest record for that thing, assuming you have set up your IoT to do so. In case 3, we will explore how to interact with shadows in the cloud. Using Greengrass, you can also keep a shadow on the edge and even enable shadow synchronisation between the edge and the cloud. In this way your applications running at the edge can access shadow record with low latency, while cloud based applications have copy available to them as well. We will explore the use of local shadows with Greengrass for a machine learning application in case 5.
 <div align="center">
-	<img width="480" height="270" src="images/shadow_flow.png" alt="iot setup">
+	<img height="270" src="images/shadow_flow.png" alt="iot setup">
 	<br>
 </div>
 
