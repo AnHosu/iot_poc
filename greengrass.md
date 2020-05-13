@@ -24,6 +24,17 @@ The process of installing Greengrass depends a lot on your device and its operat
 - [Unpack software](https://docs.aws.amazon.com/greengrass/latest/developerguide/gg-device-start.html) and install certificates
 - Download and install the root CA certificate
 
+If it is not already available on the device, we might want to install the Java 8 runtime
+```bash
+sudo apt install openjdk-8-jdk
+```
+For this demonstration we will use Python 3.7 for the functions we deploy into Greengrass Core. Therefore we also need to make sure that Python 3.7 is available to Greengrass core on the device.<br><br>
+In order for Greengrass to use these runtimes, the names of the binaries must be very specific. Python must be named `Python3.7` and the Java runtime must be named `Java8`. If the versions installed are correct, but the binaries are not named the way Greengrass expects, e.g. Java 8 is just called `Java`, we can either rename them or create symlinks:
+```bash
+# These are examples. Modify to your particular setup
+sudo ln -s /usr/bin/python3 /usr/bin/python3.7
+sudo ln -s /usr/bin/java /usr/bin/java8
+```
 Once you have done all these steps, you might want to check that you have all the dependencies you need by running the Greengrass dependency checker:
 ```bash
 mkdir greengrass-dependency-checker-GGCv1.10.x
@@ -33,11 +44,7 @@ unzip greengrass-dependency-checker-GGCv1.10.x.zip
 cd greengrass-dependency-checker-GGCv1.10.x
 sudo ./check_ggc_dependencies | more
 ```
-If it is not already available on your device, you might want to install the Java 8 runtime
-```bash
-sudo apt install openjdk-8-jdk
-```
-For this demonstration we will use Python 3.7 for the functions we deploy into Greengrass Core. Therefore we also need to make sure that Python 3.7 is available to Greengrass core on the device.<br>
+The dependency checker will also provide hints if it cannot locate Python or Java. Make sure these are available, but we do not need the other optional dependencies.<br>
 When all is set up and configured, you can start Greengrass by running
 ```bash
 cd /greengrass/ggc/core/
