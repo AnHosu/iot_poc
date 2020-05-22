@@ -13,17 +13,9 @@ import logging
 import json
 import time
 
-from AWSIoTPythonSDK.MQTTLib import AWSIoTMQTTShadowClient
-
-myAWSIoTMQTTShadowClient = AWSIoTMQTTShadowClient(clientId)
-myAWSIoTMQTTShadowClient.configureEndpoint(host, port)
-myAWSIoTMQTTShadowClient.configureCredentials(rootCAPath, privateKeyPath, certificatePath)
-myAWSIoTMQTTShadowClient.configureAutoReconnectBackoffTime(1, 32, 20)
-myAWSIoTMQTTShadowClient.configureConnectDisconnectTimeout(10)
-myAWSIoTMQTTShadowClient.configureMQTTOperationTimeout(5)
-myAWSIoTMQTTShadowClient.connect()
-
-REPUB_TOPIC = 'republish/reading'
+# Hardcoding device name. Not the prettiest solution.
+#  Perhaps we can do something better later...
+REPUB_TOPIC = "$aws/things/bme680_temperature/shadow/update"
 
 client = greengrasssdk.client('iot-data')
 
@@ -63,10 +55,13 @@ def function_handler(event, context):
         avg_cpu_temp = sum(cpu_temps)/float(len(cpu_temps))
         # Compensated temperature
         comp_temp = 2*input_temperature - avg_cpu_temp
-        message = event
-        message['input_topic'] = input_topic
-        message['temperature'] = comp_temp
+        message = {}
+        message["state"] = { "reported" : {"temperature" : comp_temp,
+                                            "pressure" : event["pressure"],
+                                            "humidity" : event["humidity"],
+                                            "message" : event["message"]}}
         logging.info(event)
+        logging.info(message)
     except Exception as e:
         logging.error(e)
     client.publish(topic=REPUB_TOPIC, payload=json.dumps(message))
