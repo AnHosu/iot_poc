@@ -15,7 +15,7 @@ import time
 
 # Hardcoding device name. Not the prettiest solution.
 #  Perhaps we can do something better later...
-REPUB_TOPIC = "$aws/things/bme680_temperature/shadow/update"
+THING_NAME = "bme680_temperature"
 
 client = greengrasssdk.client('iot-data')
 
@@ -64,5 +64,5 @@ def function_handler(event, context):
         logging.info(message)
     except Exception as e:
         logging.error(e)
-    client.publish(topic=REPUB_TOPIC, payload=json.dumps(message))
+    client.update_thing_shadow(thingName=THING_NAME, payload=json.dumps(message))
     return
