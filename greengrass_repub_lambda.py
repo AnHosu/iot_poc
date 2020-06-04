@@ -46,10 +46,9 @@ def get_temperature(event):
 
 def function_handler(event, context):
     try:
-        input_topic = get_topic(context)
         input_temperature = get_temperature(event)
         cpu_temps = []
-        for n in range(8):
+        for _ in range(8):
             cpu_temps.append(get_cpu_temperature())
             time.sleep(1)
         avg_cpu_temp = sum(cpu_temps)/float(len(cpu_temps))

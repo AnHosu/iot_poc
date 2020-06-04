@@ -21,9 +21,16 @@ We will not cover installing and setting up Greengrass Group with a device as th
 
 Let us get started!
 # Publish to Local Shadow 
-In this section we will set up a local Shadow and build a Lambda function that takes values published by our sensor and updates the Shadow.<br>
+In this section, we will set up a local Shadow and build a Lambda function that takes values published by our sensor and updates the Shadow.<br>
+<div align="center">
+	<img width=500 src="images/greengrass_ml_architecture_repub.jpg" alt="Greengrass ML Demo Architechture">
+	<br>
+    This is the part of the architecture we will build in this section.
+</div>
+
 ## Prepare the Thing
-We already have a [script](greengrass_thing.md) that connects our Thing, the sensor, and publishes readings to our Greengrass Group on a local topic. There is no need to modify it in any way. We will just leave it running, continuously publishing values to a local topic. I went with the topic `bme680/readings` but any topic goes, just remember it, as we need it in a moment.
+We [register and add](greengrass.md#associate-a-thing-with-a-greengrass-group) our Thing, the sensor, to our Greengrass group.<br>
+We already have a [script](greengrass_thing.md) that connects our Thing and publishes readings to our Greengrass Group on a local topic. There is no need to modify it in any way. We will just leave it running, continuously publishing values to a local topic. I went with the topic `bme680/readings` but any topic goes.
 ## The Local Shadow Service
 Any Thing we include in our Greengrass Group lives only inside the Group and only connects to the cloud when first discovering the Group. This is great for reducing the number of devices connected to the cloud, but it also means that we cannot directly take advantage of the Shadow that is in the cloud.<br>
 Fortunately, Greengrass provides a Local Shadow Service inside Greengrass that we can use instead. The local Shadow service works in a very similar way to the Shadow in the cloud. The Shadow document follows the same schema, it is interacted with using the exact same topics, and it can be get, updated, and deleted. The Shadow lives inside the Greengrass Group and is only accessible to entities connected to the group.<br>
@@ -43,9 +50,8 @@ client.publish('$aws/things/my_sensor/shadow/update', json.dumps(message))
 The message goes to whichever MQTT server the client is connected to. Since we are connected to Greengrass Core and not AWS IoT, the message never reaches the cloud. So even though the topic is exactly the same as if we were updating the cloud based Shadow, the cloud based Shadow is not updated.<br>
 As a matter of fact, the message also does not reach the local Shadow. At least not yet. Since we are working with local topics, we need to [set up subscriptions](greengrass.md#configure-subscriptions-in-greengrass) and deploy them to the Group before any messages are relayed.
 <div align="center">
-	<img width=500 src="images/greengrass_subscription_toshadow.png" alt="Greengrass ML Demo Architechture">
+	<img width=500 src="images/greengrass_subscription_toshadow.png" alt="Subscription with local Shadow">
 	<br>
-    This is the overall architechture of the application we will build in this demonstration.
 </div>
 
 This is how it could look, but since there is a much easier way, this is not how we will do it.
@@ -70,22 +76,85 @@ shadow = json.loads(shadow['payload']) # It takes a bit of unpacking...
 # Delete the Shadow
 client.delete_thing_shadow(thingName=THING_NAME)
 ```
-There is no need to deal with callback functions - everthing is taken care of behind the scenes. Furthermore, there is no need to explicitly define the subscriptions in the Greengrass Group for these actions. As long as we use the Greengrass MQTT client, the messages find their way to the local Shadow service.<br>
+There is no need to deal with callback functions - everthing is taken care of behind the scenes. Furthermore, there is no need to explicitly define the subscriptions in the Greengrass Group for these actions. As long as we use the Greengrass MQTT client, the messages find their way to the local Shadow service, which is just a set of hidden Lambda functions.<br>
 We now know everything we need to have our Lambda function perform the transformations we need and update the Shadow. There is just one small aesthetic detail to attend to before we can start building.
 ### Setting environment variables for Lambda functions in Greengrass
+In the snippet above, we hard coded the device ID, the Thing name. This will work just fine, but it does make the Lambda function difficult to reuse. We do, however, have a better option. We can provide Lambda functions running in a Greengrass Group with environment variables. Environment values are key-value pairs that are specified outside the running script but can be accessed at runtime. If you are already familiar with environment variables for Lambdas running in the cloud, they work in a very similar fashion, but are specified in a different place when used with Greengrass. Let us take it step by step.<br>
+First we will need to decide on a key-value structure. We will go with the key being `THING_NAME` and the value being the ID of our device.<br>
+Then we need to write our Lambda function to take advantage of the environment variable. This is fairly straight forward, in Python:
+```python
+import os
+THING_NAME = os.environ('THING_NAME')
+```
+The last step we need is to actually provide the environment variable to the instance of our Lambda function in the Greengrass Group. We do this by locating our Greengrass Group in the console and configure the lambda in question
 
-Leave greengrass thing script as is. Modify lambda to update shadow instead of publishing to AWS IoT. Subscriptions.
+<div align="center">
+	<img width=500 src="images/greengrass_lambda_configure.png" alt="Configure Greengrass Lambda">
+	<br>
+	Note that the name of your Greengrass Group and Lambdas may be different
+</div>
+
+At the bottom of the configuration options, we find a set of fields where we can provide key value pairs, and we just go ahead and provide ours:
+<div align="center">
+	<img width=500 src="images/greengrass_lambda_environment_variable.png" alt="Environment variable">
+	<br>
+</div>
+
+Now, when we deploy the Lambda function, the environment variable will be available for use. This means that if we have multiple sensors we we can use the same Lambda Alias to create multiple Lambda functions deployed to the Greengrass Group serving their exact device. Less code and less work for us.
+### Build the republishing Lambda function
+To summarise, these are the steps we take to build the Lambda function that recieves readings from our Thing, treats them, and publishes an update to the local Shadow.<br>
+- We create a Lambda function with, using the full [example](greengrass_repub_lambda.py)
+- We create a Lambda alias
+- In the Greengrass Group, we create a Lambda function refferring to the alias
+- We configure the Lambda function
+  - The timeout should be at least 10 seconds
+  - Access to `/sys` should be enabled
+  - We should provide the environment variable `THING_NAME`
+## Subscriptions
+We only need one subsription, one going from our device to the Lambda we just created
+<div align="center">
+	<img width=500 src="images/greengrass_subscription_repub_shadow.png" alt="Repub to Shadow subscription">
+	<br>
+</div>
+
+That is it for the first part. Once we deploy, We have a Thing publishing sensor readings, they are treated and used to update the local Shadow. Right now there is not much to see though, as we have done nothing to make use of or even visualise the local Shadow. We will get there soon though.
 # Setup Shadow Synchronisation
+In this section, we will set up Shadow synchronisation between the local Shadow and the Shadow of our device in the cloud.
+<div align="center">
+	<img width=500 src="images/greengrass_ml_architecture_sync.jpg" alt="Greengrass ML Demo Architechture">
+	<br>
+    This is the part of the architecture we will build in this section.
+</div>
+
+
 <div align="center">
 	<img width=500 src="images/aws_shadow_local_sync.png" alt="Local to Cloud Shadow Sync">
 	<br>
 </div>
 
+
 # ML at the Edge
-## Set Up Device
+<div align="center">
+	<img width=500 src="images/greengrass_ml_architecture_inference.jpg" alt="Greengrass ML Demo Architechture">
+	<br>
+    This is the part of the architecture we will build in this section.
+</div>
+
+<div align="center">
+	<img width=500 src="" alt="ML Architecture">
+	<br>
+</div>
+
+## Set Up Gateway Device
+### Installing Tensorflow
 [Tensorflow wheels](https://github.com/PINTO0309/Tensorflow-bin)
-ML Resources
-Inference lambda
+
+## Manage Machine Learning Resources
+### SavedModel
+### S3 Bucket
+### Machine Learning Resource in Greengrass
+## Inference lambda
+### Load Model
 Subscriptions
 # In Production
 ?
