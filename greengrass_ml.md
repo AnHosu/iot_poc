@@ -126,20 +126,32 @@ In this section, we will set up Shadow synchronisation between the local Shadow 
     This is the part of the architecture we will build in this section.
 </div>
 
-
+Synchronising the Shadow just means that the local Shadow service will send regular updates to the cloud based Shadow such that the status quo is reflected there as well. We would usually do this to support an application running in the cloud, but in this case we are doing it mostly for show.<br>
+It is important to note that the synchronisation works both ways. Updates that are done to the local Shadow will eventually be reflected in the cloud based Shadow and vice versa. We will not have anything directly updating the cloud Shadow in this case, however.<br>
+Setting up synchronisation is actually fairly straight forward. We navigate to our Greengrass group and find the Device page. Next to the Device we added earlier it should be saing 'Local Shadow Only'. All we have to do is to expand the options for that Device by clicking the three dots and selecting Enable Shadow Synchronisation:
 <div align="center">
 	<img width=500 src="images/aws_shadow_local_sync.png" alt="Local to Cloud Shadow Sync">
 	<br>
 </div>
 
+Now we deploy the change.<br>
+We can test whether it works by navigating to the page of the particular Device and going to its Shadow tab. If everything we did in the previous section works and the Shadow synchronisation works, we should see that the Shadow gets updated.
+<div align="center">
+	<img width=500 src="images/.png" alt="Shadow sync working">
+	<br>
+</div>
 
 # ML at the Edge
+In this section, we will deploy a machine learning model into the Greengrass group and have it do inference based on the data coming from our Device.
 <div align="center">
 	<img width=500 src="images/greengrass_ml_architecture_inference.jpg" alt="Greengrass ML Demo Architechture">
 	<br>
     This is the part of the architecture we will build in this section.
 </div>
 
+Specifically, we are going to create a Lambda function that loads a machine learning pipeline consisting of a model that transforms the data into features that are then evaluted in a neural network based model. The data we will get from the local Shadow such that the inference does not rely on live data
+
+## Why is this a difficult thing?
 <div align="center">
 	<img width=500 src="" alt="ML Architecture">
 	<br>
@@ -153,8 +165,9 @@ In this section, we will set up Shadow synchronisation between the local Shadow 
 ### SavedModel
 ### S3 Bucket
 ### Machine Learning Resource in Greengrass
-## Inference lambda
+## Inference Lambda
+### Long-running Lambdas
 ### Load Model
-Subscriptions
+
 # In Production
 ?
