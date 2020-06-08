@@ -14,7 +14,7 @@ We will be utilising expertise from the previous demonstrations of [publishing](
 To build the target demonstration, we will walk through three parts. First we will set up a local Shadow within our Greengrass group and use obtained sensor values to contiuously update the Shadow. Then we will enable synchronisation between the local Shadow and a cloud copy of the Shadow. Last, but not least, we will set up inference with a Tensorflow2 machine learning model.<br>
 We will not cover installing and setting up Greengrass Group with a device as this was covered in the [general introduction to Greengrass](greengrass.md#install-and-configure-greengrass). Be sure to refer to previous demonstrations when in doubt.<br>
 <div align="center">
-	<img width=500 src="images/greengrass_ml_architecture.jpg" alt="Greengrass ML Demo Architechture">
+	<img width=500 src="images/greengrass_ml_architecture.png" alt="Greengrass ML Demo Architechture">
 	<br>
     This is the overall architechture of the application we will build in this demonstration.
 </div>
@@ -23,7 +23,7 @@ Let us get started!
 # Publish to Local Shadow 
 In this section, we will set up a local Shadow and build a Lambda function that takes values published by our sensor and updates the Shadow.<br>
 <div align="center">
-	<img width=500 src="images/greengrass_ml_architecture_repub.jpg" alt="Greengrass ML Demo Architechture">
+	<img width=500 src="images/greengrass_ml_architecture_repub.png" alt="Greengrass ML Demo Architechture">
 	<br>
     This is the part of the architecture we will build in this section.
 </div>
@@ -121,7 +121,7 @@ That is it for the first part. Once we deploy, We have a Thing publishing sensor
 # Setup Shadow Synchronisation
 In this section, we will set up Shadow synchronisation between the local Shadow and the Shadow of our device in the cloud.
 <div align="center">
-	<img width=500 src="images/greengrass_ml_architecture_sync.jpg" alt="Greengrass ML Demo Architechture">
+	<img width=500 src="images/greengrass_ml_architecture_sync.png" alt="Greengrass ML Demo Architechture">
 	<br>
     This is the part of the architecture we will build in this section.
 </div>
@@ -144,7 +144,7 @@ We can test whether it works by navigating to the page of the particular Device 
 # ML at the Edge
 In this section, we will deploy a machine learning model into the Greengrass group and have it do inference based on the data coming from our Device.
 <div align="center">
-	<img width=500 src="images/greengrass_ml_architecture_inference.jpg" alt="Greengrass ML Demo Architechture">
+	<img width=500 src="images/greengrass_ml_architecture_inference.png" alt="Greengrass ML Demo Architechture">
 	<br>
     This is the part of the architecture we will build in this section.
 </div>
@@ -152,10 +152,6 @@ In this section, we will deploy a machine learning model into the Greengrass gro
 Specifically, we are going to create a Lambda function that loads a machine learning pipeline consisting of a model that transforms the data into features that are then evaluted in a neural network based model. The data we will get from the local Shadow such that the inference does not rely on live data
 
 ## Why is this a difficult thing?
-<div align="center">
-	<img width=500 src="" alt="ML Architecture">
-	<br>
-</div>
 
 ## Set Up Gateway Device
 ### Installing Tensorflow
