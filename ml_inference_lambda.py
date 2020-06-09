@@ -55,6 +55,7 @@ while True:
         raw_prediction = inference_predictor(feature_tensor)['y'].numpy()
         # Evaluate prediction
         prediction = (raw_prediction >= CLASSIFICATION_THRESHOLD).astype(int).tolist()[0][0]
+        # Publish result to the local shadow
         shadow_update["state"] = {"reported" : { "rain_prediction" : prediction } }
     except Exception as e:
         logging.error("Failed to do prediction: " + repr(e))
@@ -63,6 +64,6 @@ while True:
     time.sleep(10) # Repeat every 10s
 
 # The function handler here will not be called. Our Lambda function
-#  should be long running and stay in the infinite loop above.
+#  should be long lived and stay in the infinite loop above.
 def function_handler(event, context):
     pass
