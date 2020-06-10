@@ -87,15 +87,14 @@ Then we need to write our Lambda function to take advantage of the environment v
 import os
 THING_NAME = os.environ('THING_NAME')
 ```
-The last step we need is to actually provide the environment variable to the instance of our Lambda function in the Greengrass Group. We do this by locating our Greengrass Group in the console and configure the lambda in question
-
+The last step we need is to actually provide the environment variable to the instance of our Lambda function in the Greengrass Group. We do this by locating our Greengrass Group in the console and configure the lambda in question.
 <div align="center">
 	<img width=500 src="images/greengrass_lambda_configure.png" alt="Configure Greengrass Lambda">
 	<br>
 	Note that the name of your Greengrass Group and Lambdas may be different
 </div>
 
-At the bottom of the configuration options, we find a set of fields where we can provide key value pairs, and we just go ahead and provide ours:
+At the bottom of the configuration options, we find a set of fields where we can provide key value pairs, and we just go ahead and provide ours.
 <div align="center">
 	<img width=500 src="images/greengrass_lambda_environment_variable.png" alt="Environment variable">
 	<br>
@@ -112,7 +111,7 @@ To summarise, these are the steps we take to build the Lambda function that reci
   - Access to `/sys` should be enabled
   - We should provide the environment variable `THING_NAME`
 ## Subscriptions
-We only need one subsription, one going from our device to the Lambda we just created
+We only need one subsription, one going from our device to the Lambda we just created.
 <div align="center">
 	<img width=500 src="images/greengrass_subscription_repub_shadow.png" alt="Repub to Shadow subscription">
 	<br>
@@ -129,7 +128,7 @@ In this section, we will set up Shadow synchronisation between the local Shadow 
 <br>
 Synchronising the Shadow just means that the local Shadow service will send regular updates to the cloud based Shadow such that the status quo is reflected there as well. We would usually do this to support an application running in the cloud, but in this case we are doing it mostly for show.<br>
 It is important to note that the synchronisation works both ways. Updates that are done to the local Shadow will eventually be reflected in the cloud based Shadow and vice versa. We will not have anything directly updating the cloud Shadow in this case, however.<br>
-Setting up synchronisation is actually fairly straight forward. We navigate to our Greengrass group and find the Device page. Next to the Device we added earlier it should be saing 'Local Shadow Only'. All we have to do is to expand the options for that Device by clicking the three dots and selecting Enable Shadow Synchronisation:
+Setting up synchronisation is actually fairly straight forward. We navigate to our Greengrass group and find the Device page. Next to the Device we added earlier it should be saing 'Local Shadow Only'. All we have to do is to expand the options for that Device by clicking the three dots and selecting Enable Shadow Synchronisation.
 <div align="center">
 	<img width=500 src="images/aws_shadow_sync_enable.png" alt="Local to Cloud Shadow Sync">
 	<br>
@@ -174,7 +173,7 @@ We will use these two models as examples of doing machine learning inference.
 ### Prepare machine learning resources
 To use machine learning resources like a Tensorflow SavedModel in a Greengrass deployment, it needs to be somewhere where Greengrass can access it. Greengrass can access objects in S3 buckets, so this is where we will put our resources.<br>
 However, Greengrass is a seperate service and needs permission to access other services. We already had Greengrass access Lambda to fetch deployment packages and that worked smoothly, but we will have to understand why before we can ensure the same for S3.<br>
-Greengrass has a service role that determines what other services and actions it has permissions to use. The service role can be found in the AWS IoT console under the Settings tab where we also find our custom endpoint. Somewhere in the list of settings is the Greengrass service role:
+Greengrass has a service role that determines what other services and actions it has permissions to use. The service role can be found in the AWS IoT console under the Settings tab where we also find our custom endpoint. Somewhere in the list of settings is the Greengrass service role.
 <div align="center">
 	<img width=500 src="images/aws_iot_settings_greengrassrole.png" alt="Greengrass service role">
 	<br>
@@ -363,7 +362,7 @@ Now we can finally attach the machine learning resources to our Lambda function.
 	<br>
 </div>
 
-Since we have already created the resources, we select the option to 'Attach an existing machine learning resource'
+Since we have already created the resources, we select the option to 'Attach an existing machine learning resource'.
 <div align="center">
 	<img width=500 src="images/greengrass_lambda_resources_existing.png" alt="Attach ML resources">
 	<br>
@@ -391,11 +390,11 @@ Once the Lambda is deployed to our Greengrass Group, we just want it to run fore
 
 # Deploy and Verify
 That is it; everything is in place for doing machine learning inference at the edge.<br>
-First let us ensure that Greengrass is running using
+First let us ensure that Greengrass is running using:
 ```bash
 ps aux | grep -E 'greengrass.*daemon'
 ```
-Then we deploy everything we have created
+Then we deploy everything we have created.
 <div align="center">
 	<img src="images/greengrass_deploy.png" alt="iot setup">
 	<br>
