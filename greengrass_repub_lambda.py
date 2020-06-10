@@ -12,15 +12,16 @@ import greengrasssdk
 import logging
 import json
 import time
+import os
 
-# Hardcoding device name. Not the prettiest solution.
-#  Perhaps we can do something better later...
-THING_NAME = "bme680_temperature"
+THING_NAME = os.environ["THING_NAME"]
 
 client = greengrasssdk.client('iot-data')
 
-# Gets the CPU temperature in degrees C
 def get_cpu_temperature():
+    '''
+    Gets the CPU temperature of a Raspberry Pi in deg. C
+    '''
     try:
         f = open("/sys/class/thermal/thermal_zone0/temp")
         raw_temp = f.read()
