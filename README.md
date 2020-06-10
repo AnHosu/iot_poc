@@ -26,26 +26,26 @@ In IoT terms the sensor is the 'thing' or 'device', and our Rasoberry Pi is the 
 
 We are going to do four different cases in total. Hardware-wise everything will be the same throughout; BME680 connected to the Pi which in turn is connected to the internet. If you are using the same breakout, take a look at [this tutorial](https://learn.pimoroni.com/tutorial/sandyj/getting-started-with-bme680-breakout "BME680 tutorial") to set it up.
 # Demonstrations
-The five demonstrations are the main attraction of this tutorial, and if you are looking for examples and code snippets, then go ahead and dive right in. If you prefer a bit of theoretical background before you get started, then jump to the next section before starting the cases.
+The five demonstrations are the main attraction of this tutorial, and if you are looking for examples and code snippets, then go ahead and dive right in. If you prefer a bit of theoretical background before you get started, then jump to the next section before starting.
 ## 1) Publish Industrial Data with AWS IoT
 The simplest way to do IoT with AWS. We will register our sensor as a thing in AWS IoT Core and will be using the AWS IoT Python SDK to publish sensor readings to a topic. We go through concepts such as things, topics, MQTT, and more.<br>
-In this case the Raspberry is simply simulating a microcontroller that will query the sensor and publish the result.<br><br>
+In this case our Raspberry is simply simulating a microcontroller that will query the sensor and publish the result.<br><br>
 [Get started here](publishing.md "simple publishing case").
 Here is the full [example script](simple_publishing.py "simple publishing example").
 ## 2) Publish and Subscribe
-In this case, we build upon the previous case and are constructing a setup where our device will not just send data but also respond to messages sent to it.<br>
+In this case, we build upon the previous case and will construct a setup where our device will not just send data but also respond to messages sent to it.<br>
 The Raspberry Pi is still just simulating a microcontroller, but we start to see how compute at the edge is usefull and can be managed with AWS IoT.<br><br>
 [Get started here](pubsub.md "simple pub/sub case"). Here is the full [example script](simple_pubsub.py "simple pubsub example").
 ## 3) Utilise Thing Shadows
-Using the Thing Shadow feature of AWS IoT, we will create a twin/shadow of our device in the cloud and update it whenever a new reading is available. You can use this cool feature to build a digital twin of your process.<br>
+Using the Thing Shadow feature of AWS IoT, we will create a twin/Shadow of our device in the cloud and update it whenever a new reading is available. You can use this cool feature to build a digital twin of your process.<br>
 The Raspberry is still simulating a microcontroller that will query the sensor, but instead of just publishing the result, it will update the Shadow document of the Thing.<br><br>
 [Get started here](shadow.md "Shadow case"). Here is the full [example script](shadow.py "shadow example").
 ## 4) Build an Edge with Greengrass
 Now our Pi will act the part of gateway device. The gateway device effectively represents an edge that is manageable from the cloud and where data transformations or calculations can happen. This could be signal processing, edge analytics, or even machine learning models. Greengrass is the AWS software offering for gateway devices. In this demonstration we will set up Greengrass on the Pi, connect a thing, our sensor, to Greengrass, and deploy a calculation from the cloud to the edge using a Lambda function.<br><br>
 [Get started here](greengrass.md "Greengrass case"). Here is the full [example script for a local device](greengrass_thing.py "Example of Thing for Greengrass") and the [Lambda function](greengrass_sys_lambda.py "Lambda example") we will deploy into Greengrass Core.
 ## 5) Advanced Greengrass Features
-We will combine everything and finally deploy a machine learning model to the edge.<br><br>
-This case is still under construction.
+In this final demonstration, we will combine everything from the previous demonstrations to deploy a machine learning model from the cloud into Greengrass and do inference at the edge. This requires us to explore additional advanced features and configurations of Greengrass, but shows how, with a few means and a bit of engineering, we can achieve quite complex functionality.<br><br>
+[Get started here](greengrass_ml.md "Advanced Greengrass case"). This demonstration uses the same [example script for a local device](greengrass_thing.py "Example of Thing for Greengrass") as the previous but has two new examples of Lambda functions, [including one](ml_inference_lambda.py "ML inference Lambda") doing machine learning inference.
 # IoT with AWS IoT
 This section has a bit of theoretical context for the demonstrations. I am going to do my best to explain core concepts of internet of things in the context of an industrial setting and AWS IoT. 
 ### Things
