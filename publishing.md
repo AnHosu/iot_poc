@@ -11,10 +11,10 @@ while true
 ```
 For the demonstration we will be using the Bosch BME680 air quality sensor connected to a Raspberry Pi model 3B. The BME680 does four different measurements, but for this case we will only be measuring and publishing the temperature. The Pi is just there to query the sensor and run the AWS IoT SDK. It essentially plays the part of a microcontroller, and so anything we accomplish here can be done with a microcontroller or any other compute device. In the final section of this demonstration we will discuss some of the additional considerations for a similar setup in an actual industrial setting.
 <div align="center">
-	<img height="200" src="images/iotaws_overview.png" alt="IoT overview">
+	<img height="200" src="images/publishing_architecture.png" alt="IoT overview">
 	<img height="200" src="images/hardware_setup.jpg" alt="Hardware setup">
   <br>
-  Schematic of the setup we are emulating in this demonstration and a picture of the actual hardware I used for developing the examples.
+  Schematic of the architecture we are building in this demonstration and a picture of the actual hardware I used for developing.
 </div>
 
 # Registering the Sensor in IoT Core
@@ -183,9 +183,17 @@ Published topic bme680/temperature: {"status": "success", "timestamp_utc": "2020
 Published topic bme680/temperature: {"status": "success", "timestamp_utc": "2020-02-15T16:43:18.519356Z", "value": 21.57999999999999, "sequence": 27}
 ```
 But the most interesting part, of course, is whether the data gets to AWS. Let us say that we published to the topic `BME680/temperature`. We can open the AWS Console, go to IoT Core, and find the Test tab. Here we can subscribe to a topic. When I type in the topic `BME680/temperature`, 
-![test client](images/aws_iot_test_simple_publish.PNG)
+<div align="center">
+	<img width=500 src="images/aws_iot_test_simple_publish.PNG" alt="iot setup">
+	<br>
+</div>
+
 I get the messages sent from the Pi.
-![test client](images/aws_iot_message_simple_publish.PNG)
+<div align="center">
+	<img width=500 src="images/aws_iot_message_simple_publish.PNG" alt="iot setup">
+	<br>
+</div>
+
 Congratulations, you are now publishing to AWS IoT! From here the messages can be redirected to whereever you want using AWS SNS, for instance to AWS Kinesis.<br>
 # In Production
 This section is not part of the demonstration as such. It is but a short discussion of some of the considerations we have to take when bringing an IoT device to production in a manufacturing environment and how to improve upon the example to make it production ready.

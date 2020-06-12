@@ -32,20 +32,51 @@ The simplest way to do IoT with AWS. We will register our sensor as a thing in A
 In this case the Raspberry Pi is simply simulating a microcontroller that will query the sensor and publish the result.<br><br>
 [Get started here](publishing.md "simple publishing case").
 Here is the full [example script](simple_publishing.py "simple publishing example").
+<div align="center">
+	<img width="500" src="images/publishing_architecture.png" alt="IoT overview">
+  <br>
+  Schematic of the architecture we are building in the demonstration of publishing.
+</div>
+
 ## 2) Publish and Subscribe
 In this case, we build upon the previous case and will construct a setup where our device will not just send data but also respond to messages sent to it.<br>
 The Raspberry Pi is still just simulating a microcontroller, but we start to see how compute at the edge is useful and can be managed with AWS IoT.<br><br>
 [Get started here](pubsub.md "simple pub/sub case"). Here is the full [example script](simple_pubsub.py "simple pubsub example").
+<div align="center">
+	<img width="500" src="images/pubsub_architecture.png" alt="pubsub overview">
+  <br>
+  Schematic of the architecture we are building in the demonstration of publishing and subscribing.
+</div>
+
 ## 3) Utilise Thing Shadows
 Using the Thing Shadow feature of AWS IoT, we will create a twin/shadow of our device in the cloud and update it whenever a new reading is available. You can use this cool feature to build a digital twin of your process.<br>
 The Raspberry Pi is still simulating a microcontroller that will query the sensor, but instead of just publishing the result, it will update the Shadow document of the Thing.<br><br>
 [Get started here](shadow.md "Shadow case"). Here is the full [example script](shadow.py "shadow example").
+<div align="center">
+	<img width=500 src="images/shadow_architecture.png" alt="iot setup">
+	<br>
+  Schematic of the architecture we are building in the demonstration of Shadow functionality.
+</div>
+
 ## 4) Build an Edge with Greengrass
 Now our Pi will act the part of gateway device. The gateway device effectively represents an edge that is manageable from the cloud and where data transformations or calculations can happen. This could be signal processing, edge analytics, or even machine learning models. Greengrass is the AWS software offering for gateway devices. In this demonstration we will set up Greengrass on the Pi, connect a thing, our sensor, to Greengrass, and deploy a calculation from the cloud to the edge using a Lambda function.<br><br>
 [Get started here](greengrass.md "Greengrass case"). Here is the full [example script for a local device](greengrass_thing.py "Example of Thing for Greengrass") and the [Lambda function](greengrass_sys_lambda.py "Lambda example") we will deploy into Greengrass Core.
+<div align="center">
+	<img width=500 src="images/greengrass_group_architecture.png" alt="iot setup">
+    <br>
+    This is the architecture we are building in the demonstration of Greengrass functionality.
+	<br>
+</div>
+
 ## 5) Advanced Greengrass Features
 In this final demonstration, we will combine everything from the previous demonstrations to deploy a machine learning model from the cloud into Greengrass and do inference at the edge. This requires us to explore additional advanced features and configurations of Greengrass, but shows how, with a few means and a bit of engineering, we can achieve quite complex functionality.<br><br>
 [Get started here](greengrass_ml.md "Advanced Greengrass case"). This demonstration uses the same [example script for a local device](greengrass_thing.py "Example of Thing for Greengrass") as the previous but has two new examples of Lambda functions, [including one](ml_inference_lambda.py "ML inference Lambda") doing machine learning inference.
+<div align="center">
+	<img width=500 src="images/greengrass_ml_architecture.png" alt="Greengrass ML Demo Architechture">
+	<br>
+    This is the architechture of the application we will build in the demonstration of advanced Greengrass Features.
+</div>
+
 # IoT with AWS IoT
 This section has a bit of theoretical context for the demonstrations. We will try to explain and understand some core concepts of internet of things in the context of an industrial setting and AWS IoT. 
 ### Things
@@ -53,7 +84,7 @@ Let us start with the so called Things. In an industrial setting, a thing is oft
 Given this vague definition of things, an obvious question arises for those who have been in the manufacturing game for a while. Manufacturing processes are usually associated with process control loops. These include connecting key process parameters to a process logic controller (PLC) that in turn controls actuators to regulate the process. An example would be the flow of water through a pipe, measured by a flow sensor and regulated by the opening or closing of a valve. The question is: are these control loops also IoT? The answer is that they could be. The process parameters and the state of the valve are all potential things that when connected to the internet become things in the internet of things. The key difference between IoT and a control loop would be the internet connection. The PLC is there to do process control, not neccessarily to send or store data, and connecting it to the internet could be a major risk for the manufacturing process. In IoT we use dedicated devices to buffer and send data to storage in the cloud or somewhere else.<br>
 AWS is our cloud of choice for this tutorial. In AWS IoT Core, you can [register](https://docs.aws.amazon.com/iot/latest/developerguide/create-aws-thing.html "how to register a thing in AWS IoT Core") and manage your things. A thing is the highest level of granularity, and it makes sense to register each parameter you measure as a seperate thing. You can then aggregate and manage hierarchies of things using [groups and types](https://docs.aws.amazon.com/iot/latest/developerguide/iot-thing-management.html "about managing hierarchies of things").
 <div align="center">
-	<img style='height: 70%; width: 70%; object-fit: contain' src="images/iot_overview.png" alt="iot setup">
+	<img width=500 src="images/iot_overview.png" alt="iot setup">
 	<br>
 </div>
 

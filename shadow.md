@@ -14,9 +14,9 @@ while true
 ```
 We will then look at the shadow document using the AWS IoT test functionality.
 <div align="center">
-	<img height="270" src="images/shadow_flow.png" alt="iot setup">
+	<img width=500 src="images/shadow_architecture.png" alt="iot setup">
 	<br>
-  This is a general view of how a Shadow fits into the larger IoT. In this demonstration, we will show how gateway devices and applications can interact with the Shadow record.
+  Schematic of the architecture we are building in this demonstration.
 </div>
 
 # Basics of Device Shadows
@@ -291,20 +291,20 @@ Congratulations! You now know how to set up a shadow for your device and you are
 If our application just listens to the `/update/accepted` we will have achieved nothing more by going through the Shadow compared to just plain publishing. The real power of Shadows is in always having the latest reading from our device available, while decoupling the device and the application.<br>
 Now that we are having the device update its Shadow each time a new reading is available, we can start having our application access that Shadow document whenever it needs it. We can always view the shadow document of our thing by going to AWS IoT > Manage > Things, then selecting our device and go to the 'Shadow' tab
 <div align="center">
-	<img src="images/aws_shadow_document.png" alt="shadow document">
+	<img width=500 src="images/aws_shadow_document.png" alt="shadow document">
   <br>
 </div>
 
 This is nice for demonstration and debugging purposes, but our application needs to access the document programatically. The MQTT protocol does not do requests, and operates using the publish and subscribe model only. So the way for our application to request the Shadow document on demand is to publish a request to a specific topic and subscribe to a response topic. Note that there is an alternative based on a REST API, which we will discuss in a [section](shadow.md#in-production) below, but for now we will stick to the MQTT way.
 By sending an empty request, `{}`, to the topic `$aws/things/yourDevice/shadow/get` our application can trigger the shadow to publish a copy of the current shadow document to the subject `$aws/things/yourDevice/shadow/get/accepted`. The easiest way to see it in action is by subscribing to the `$aws/things/yourDevice/shadow/get/#` topicfilter in the test console and then publish an empty message to `/get`. I gave it a try here
 <div align="center">
-	<img src="images/aws_shadow_get.png" alt="shadow get">
+	<img width=500 src="images/aws_shadow_get.png" alt="shadow get">
   <br>
 </div>
 
 This is also an excellent opportunity to explore what happens, when we do something unexpected. Here I published a string instead of a JSON, for instance:
 <div align="center">
-	<img src="images/aws_shadow_get_rejected.png" alt="shadow get">
+	<img width=500 src="images/aws_shadow_get_rejected.png" alt="shadow get">
   <br>
 </div>
 
@@ -312,12 +312,12 @@ The `/get` topic also has a `/rejected` subtopic that gives helpful error messag
 ## Delete the Shadow
 You might have guessed this next topic group. We now know how to update and get the shadow document. Now we just need to know how to delete it. By publishing an empty message to the topic `$aws/things/yourDevice/shadow/delete` we delete the shadow document for `yourDevice`. On successful deletion, a confirmation is published to `/delete/accepted` and a message is published to `/delete/rejected` otherwise. Let us try to delete the shadow, then try to get, and see what happens:
 <div align="center">
-	<img src="images/aws_shadow_delete.png" alt="shadow delete">
+	<img width=500 src="images/aws_shadow_delete.png" alt="shadow delete">
   <br>
 </div>
 <br>
 <div align="center">
-	<img src="images/aws_shadow_delete_get.png" alt="shadow delete get">
+	<img width=500 src="images/aws_shadow_delete_get.png" alt="shadow delete get">
   <br>
 </div>
 
@@ -374,6 +374,12 @@ This will send an update to the reported temperature state of the Shadow documen
 This section is not part of the demonstration as such. It is but a short discussion of some of the considerations we might take when bringing the Shadow feature into production. There are not many addtional considerations besides those discussed for [publishing](publishing.md#in-production) and [subscribing](pubsub.md#in-production), but here are some of them.
 ## Decouple Application and Data Stream
 In order for Shadows to be a boon and not just an added operational burden, it is important that we develop applications that utilise it properly. An example of an application that might benefit greatly from using Shadows is one that relies on machine learning models to predict outcomes for displaying or acting on. A machine learning algorithm needs all its features at the same time to produce a prediction, whereas the physical reality of our sensing equipment is that different features are reported at differing times and at different frequencies. Instead of having a large layer of business logic in front of the machine learning algorithm, the application could just serve the latest values as stored in the Shadow. This effectively decouples the data stream and the machine learning model, ensuring that our application can keep running even if a device is broken.
+<div align="center">
+	<img width=500 src="images/shadow_flow.png" alt="iot setup">
+	<br>
+  This is a general view of how a Shadow could fit into the larger IoT.
+</div>
+
 ## Shadow HTTP Interactions
 Chances are that we do not want our application to deal with the MQTT protocol. The publish subscribe model works well for the IoT part where data is flowing to and from multiple sources to multiple targets. Our application, however, often just needs the latest piece of data, and it is a bit of hassle to deal with an MQTT client, publishing, and subscribing just to get a single piece of data once in a while.<br>
 One of the major advantages of the Shadow functionality is that each Shadow exposes a [REST API](https://docs.aws.amazon.com/iot/latest/developerguide/device-shadow-rest-api.html) to which we can send regular HTTP requests and retrieve data.<br>

@@ -12,11 +12,11 @@ while true
     pack it up
     publish it
 ```
-For the demonstration are once again using the Bosch BME680 air quality sensor connected to a Raspberry Pi model 3B. The BME680 does four different measurements, and we will utilise the temperature, pressure, and humidity sensing capabilities. The Pi is just there to query the sensor and run the AWS IoT SDK. It essentially plays the part of a microcontroller, and so anything we accomplish here can be done with a microcontroller or any other compute device. In the final section of this demonstration we will discuss some of the additional considerations for a similar setup in an actual industrial setting.
+For the demonstration, are once again using the Bosch BME680 air quality sensor connected to a Raspberry Pi model 3B. The BME680 does four different measurements, and we will utilise the temperature, pressure, and humidity sensing capabilities. The Pi is just there to query the sensor and run the AWS IoT SDK. It essentially plays the part of a microcontroller, and so anything we accomplish here can be done with a microcontroller or any other compute device. In the final section of this demonstration we will discuss some of the additional considerations for a similar setup in an actual industrial setting.
 <div align="center">
-	<img height="200" src="images/iotaws_pubsub.png" alt="pubsub overview">
+	<img width="500" src="images/pubsub_architecture.png" alt="pubsub overview">
   <br>
-  Schematic of the setup we are emulating in this demonstration.
+  Schematic of the architecture we are building in this demonstration. Note the two-way communication between IoT Core and our Thing.
 </div>
 
 Connecting to AWS IoT and publishing messages were covered in the [previous](https://github.com/AnHosu/iot_poc/blob/master/publishing.md "simple publishing") demonstration. In this demonstration, we focus on subscribing to messages and combining publishing and subscribing within one client.
@@ -118,7 +118,7 @@ python simple_subscribing.py -e <your aws iot endpoint> -r <file containing root
 ```
 Nothing happens before we start publishing messages to our topic of choice. I ran the example on my Pi, using the topic `/bme680/actions`. I then moved to the test suite at AWS IoT Core > Test, and published a message to that topic.<br>
 <div align="center">
-	<img src="images/aws_iot_test_simple_subscribe.PNG" alt="shadow delete">
+	<img width=500 src="images/aws_iot_test_simple_subscribe.PNG" alt="shadow delete">
   <br>
 </div>
 
