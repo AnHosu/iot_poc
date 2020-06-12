@@ -273,7 +273,7 @@ while True:
     myAWSIoTMQTTClient.publish(topic_update, messageJson, 1)
     time.sleep(15)
 ```
-The full working script is [here](https://github.com/AnHosu/iot_poc/blob/master/shadow.py "shadow example"). Remember that the clientID is assumed to be the name of the thing. I registered a thing called my_sensor in AWS IoT and gave its certificate a policy like the one we developed above. Then I ran this script on my Raspberry Pi with the BME680 sensor. Like this:
+The full working script is [here](example_scripts/shadow.py "shadow example"). Remember that the clientID is assumed to be the name of the thing. I registered a thing called my_sensor in AWS IoT and gave its certificate a policy like the one we developed above. Then I ran this script on my Raspberry Pi with the BME680 sensor. Like this:
 ```bash
 python3 shadow.py -e <your aws iot endpoint> -r <file containing root certificate> -c <file containing device certificate> -k <file containing private key> -id <a client ID>
 ```

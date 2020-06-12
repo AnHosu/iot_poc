@@ -180,7 +180,7 @@ Now that our thing is connected to the core in its Greengrass group we can start
 ```python
 myAWSIoTMQTTClient.publish(topic, messageJson, 1)
 ```
-With this, we have everything needed to run our thing running. The [example script](greengrass_thing.py "example script") for this section summarises everything we have done so far but contains a bit more detail. It is based off of the [example](https://github.com/aws/aws-iot-device-sdk-python/blob/master/samples/greengrass/basicDiscovery.py "AWS IoT SDK basic discovery example") included with the AWS IoT SDK and was adapted to be used with our hardware setup. Note that the functionality in this script is running on the same Pi as the Greengrass software. In a real production setting, however, the two are likely to be seperate physical devices.<br>
+With this, we have everything needed to run our thing running. The [example script](example_scripts/greengrass_thing.py "example script") for this section summarises everything we have done so far but contains a bit more detail. It is based off of the [example](https://github.com/aws/aws-iot-device-sdk-python/blob/master/samples/greengrass/basicDiscovery.py "AWS IoT SDK basic discovery example") included with the AWS IoT SDK and was adapted to be used with our hardware setup. Note that the functionality in this script is running on the same Pi as the Greengrass software. In a real production setting, however, the two are likely to be seperate physical devices.<br>
 
 Once again, it is worth noting that if you have not deployed after associating the thing with the core, then your core device does not yet know that it is allowed to associate with the thing and the discovery process will fail. Specifically, you will get a `DiscoveryDataNotFoundException`. It happens to me all the time, but all we need to do is deploy the change. I will show you how in a moment.<br>
 Even assuming that the Greengrass core is running and the thing script is publishing values, not much is happening yet. If you go to the AWS IoT test test client in the console and subscribe to the topic that the thing is publishing to, there should be no values flowing in, as nothing is being sent there. In order for us to see data flowing into the cloud, we have to grab the data in Greengrass Core and pass it on to a new topic that is published to the cloud.<br>
@@ -223,7 +223,7 @@ def function_handler(event, context):
     client.publish(topic=REPUB_TOPIC, payload=event)
     return
 ```
-This is all we need to republish. The full example with a few extra frills, such as adding the incoming topic to the output body, is [here](greengrass_simple_lambda.py "Simple Lambda example for Greengrass"). Let us now look at creating the actual Lambda.
+This is all we need to republish. The full example with a few extra frills, such as adding the incoming topic to the output body, is [here](example_scripts/greengrass_simple_lambda.py "Simple Lambda example for Greengrass"). Let us now look at creating the actual Lambda.
 ### Create a Lambda Function
 To create a Lambda function, we navigate to the AWS Lambda console. Under 'Functions' we click 'Create Function'.<br>
 In the wizard, choose 'Author from scratch', give your function a name, and choose your Python runtime. I named mine 'repub_temp' and have been using Python 3.7 for the example. Then we click 'Create Function'. This might take a moment.<br>
@@ -310,11 +310,11 @@ Now we are ready to deploy. Fortunately it is very simple to deploy everything w
 ## Put Everything Together
 To get the example for this section to work, we need to do a few things in the correct order.
 1. Ensure that the device representing our sensor is associated with the core
-2. Ensure that the [Lambda function](greengrass_simple_lambda.py) is defined and associated with the core
+2. Ensure that the [Lambda function](example_scripts/greengrass_simple_lambda.py) is defined and associated with the core
 3. Ensure that there is a subscription from the device to the Lambda function and another subscription from the Lambda function to the cloud
 4. Ensure that the Greengrass daemon is running
 5. Deploy everything
-6. Run the discovery and publishing [script](greengrass_thing.py) for the sensor device
+6. Run the discovery and publishing [script](example_scripts/greengrass_thing.py) for the sensor device
 
 We can run the script like this:
 ```bash
@@ -353,7 +353,7 @@ avg_cpu_temp = sum(cpu_temps)/float(len(cpu_temps))
 # Compensated temperature
 comp_temp = 2*input_temperature - avg_cpu_temp
 ```
-That is really all there is to it, and this is all we need to add to the previous example. The [full Lambda function example](greengrass_sys_lambda.py) has a few extra frills such as error handing and logging. The next step is to define this Lambda function and associate it with the Greengrass group. You could create a new Lambda function, but I opted to update the Lambda function we created in the previous section. To do so, open the function in the Lambda console, insert the [code](greengrass_sys_lambda.py) and publish a new version. Then, from the 'Version' dropdown menu, select the alias we created earlier.
+That is really all there is to it, and this is all we need to add to the previous example. The [full Lambda function example](example_scripts/greengrass_sys_lambda.py) has a few extra frills such as error handing and logging. The next step is to define this Lambda function and associate it with the Greengrass group. You could create a new Lambda function, but I opted to update the Lambda function we created in the previous section. To do so, open the function in the Lambda console, insert the [code](example_scripts/greengrass_sys_lambda.py) and publish a new version. Then, from the 'Version' dropdown menu, select the alias we created earlier.
 <div align="center">
 	<img height=170 src="images/lambda_new_alias.png" alt="iot setup">
 	<br>

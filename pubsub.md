@@ -112,7 +112,7 @@ AWSIoTMQTTClient.subscribe(topic, 1, callback)
 while True:
     time.sleep(5)
 ```
-A full working example can be found [here](https://github.com/AnHosu/iot_poc/blob/master/simple_subscribing.py "simple subscribing example"). We run the script from a terminal on the Pi:
+A full working example can be found [here](example_scripts/simple_subscribing.py "simple subscribing example"). We run the script from a terminal on the Pi:
 ```bash
 python simple_subscribing.py -e <your aws iot endpoint> -r <file containing root certificate> -c <file containing device certificate> -k <file containing private key> -id <a client ID> -t <the topic to subscribe to>
 ```
@@ -209,7 +209,7 @@ while True:
         myAWSIoTMQTTClient.publish(topic, messageJson, 1)
         print('Published topic %s: %s\n' % (topic, messageJson))
 ```
-The whole script is [here](simple_pubsub.py "simple pubsub example"). When run, it will start to listen to the topic subscibed to. Once it receives a message with instructions it will start querying the sensor as instructed and publish. This way we can toggle between different sensors and even shut off messages when we do not need them and save some money.<br>
+The whole script is [here](example_scripts/simple_pubsub.py "simple pubsub example"). When run, it will start to listen to the topic subscibed to. Once it receives a message with instructions it will start querying the sensor as instructed and publish. This way we can toggle between different sensors and even shut off messages when we do not need them and save some money.<br>
 This might not be exactly the thing that you want your device to do, but now you have the building blocks to create whatever response you want. As a challenge, why not try to set up a topic that controls how often values are published from the device? With such functionality, you could adjust the tradeoff between storage cost and data granularity over time.
 # In Production
 Besides the considerations mentioned in the [previous demonstration](publishing.md#in-production), a few additional considerations apply now that we are able to establish two way communication with our devices in the IoT.

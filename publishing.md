@@ -169,7 +169,7 @@ while True:
     loopCount += 1
     time.sleep(5)
 ```
-The script [simple_publishing.py](simple_publishing.py) is a full working example using the BME680 sensor. I can be called as follows
+The script [simple_publishing.py](example_scripts/simple_publishing.py) is a full working example using the BME680 sensor. I can be called as follows
 ```bash
 python simple_publishing.py -e <your aws iot endpoint> -r <file containing root certificate> -c <file containing device certificate> -k <file containing private key> -id <a client ID> -t <the topic to publish to>
 ```

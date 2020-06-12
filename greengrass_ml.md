@@ -163,7 +163,7 @@ def function_handler(event, context):
     client.update_thing_shadow(thingName=THING_NAME, payload=json.dumps(message))
     return
 ```
-The full example script can also be found [here](greengrass_repub_lambda.py "Lambda for publishing to Shadow"). We now need to pack this script in a zip file along with the Greengrass SDK, so we can create a Lambda function. We create the Lambda function and upload the zip file
+The full example script can also be found [here](example_scripts/greengrass_repub_lambda.py "Lambda for publishing to Shadow"). We now need to pack this script in a zip file along with the Greengrass SDK, so we can create a Lambda function. We create the Lambda function and upload the zip file
 <div align="center">
 	<img width=500 src="images/lambda_repub.png" alt="Repub Lambda">
 	<br>
@@ -471,7 +471,7 @@ while True:
 def function_handler(event, context):
     pass
 ```
-The script can also be found [here](ml_inference_lambda.py "Inference Lambda script").<br><br>
+The script can also be found [here](example_scripts/ml_inference_lambda.py "Inference Lambda script").<br><br>
 We zip this script along with the Greengrass SDK and create a deployment package.
 <div align="center">
 	<img width=500 src="images/lambda_ggml_inference.png" alt="Inference Lambda">
