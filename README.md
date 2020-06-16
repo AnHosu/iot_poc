@@ -5,11 +5,11 @@ AWS offers multiple ways to ingest and store data but, for industrial scale sens
 ## Contents
 * [Hardware Setup](README.md#the-hardware-setup)
 * [Cases](README.md#case-setups)
-    * [Simple publishing](README.md#1-publish-industrial-data-with-aws-iot)
+    * [Simple Publishing](README.md#1-publish-industrial-data-with-aws-iot)
     * [Publish and Subscribe](README.md#2-publish-and-subscribe)
-    * [Utilise thing shadows](README.md#3-utilise-thing-shadows)
+    * [Utilise Thing Shadows](README.md#3-utilise-thing-shadows)
     * [Build an Edge with Greengrass](README.md#4-build-an-edge-with-greengrass)
-    * [Shadows, Greengrass, and ML models](README.md#5-advanced-greengrass-features)
+    * [Advanced Features and ML in Greengrass](README.md#5-advanced-greengrass-features)
 * [Introduction to AWS IoT](README.md#iot-with-aws-iot)
 # The Hardware Setup
 It would not be IoT without at least one device. The demonstrations focus on the software layer but use actual hardware, not simulations, to prove concepts. I have been using a Raspberry Pi 3 Model B+ along with a Bosch BME680 sensor on a [breakout](https://shop.pimoroni.com/products/bme680-breakout "Pimoroni BME680 breakout"). Any sensor would do, but I like this one and this particular breakout beacause it has a nice [library](https://github.com/pimoroni/bme680-python "Pimoroni BME680 library") which allows us to reduce the amount of code we need to query our sensor to a minimum. Furthermore, this particular sensor has four different components, allowing us to measure temperature, atmospheric pressure, relative humidity, and, with a bit of additional work, air quality. I will not elaborate too much on this particular sensor equipment for this demonstration and I will try to be clear about when you can replace my example code with code querying your particular sensor.<br>
@@ -17,7 +17,7 @@ In IoT terms the sensor is the 'Thing' or 'Device', and our Raspberry Pi is the 
 <div align="center">
 	<img width=500 src="images/hardware_setup.jpg" alt="iot setup">
 	<br>
-    Raspberry Pi 3 Model B+ with the BME680 sensor. The sensor is intentionally placed quite close to the CPU, which will interfere with the temperature readings. In case 4, we will deploy calculations from AWS onto the Pi to correct for this, as an example of edge calculations.
+    Raspberry Pi 3 Model B+ with the BME680 sensor. The sensor is intentionally placed quite close to the CPU, which will interfere with the temperature readings. In demonstration 4, we will deploy calculations from AWS onto the Pi to correct for this, as an example of edge calculations.
     <br>
     <br>
 </div>

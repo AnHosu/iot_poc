@@ -1,18 +1,18 @@
 # Utilise Thing Shadows
-On its own, a Thing Shadow might not look like much or even that useful. It certainly is an extra layer of complexity on top of publishing and subscribing. Shadows are, however, the foundation on which we can build Digital Twins and are an almost neccessity for applications that run machine learning models on the IoT data.<br><br>
-So what exactly is the Shadow of a Thing? In a moment we will dive into the technical details, but we can think of a Shadow as an entity that has the same abilities as a Thing, it can send and receive messages, except that it is always an exact copy of the latest state of the Thing. If the thing goes offline, the Thing will still be there reporting the latest state of the thing. A Shadow is purely a software construct, there is no hardware, but it can live in the cloud, on the edge, or both.<br><br>
-Before we get started, it should be said that the [documentation](https://docs.aws.amazon.com/iot/latest/developerguide/iot-device-shadows.html "AWS thing shadow docs") for Shadows is quite good and definitely worth a read. Instead of repeating the documentation, we will expand on the previous demonstrations of [publishing](publishing.md "Publishing demonstration") and [subscribing](pubsub.md "pub/sub demonstration") with AWS IoT and MQTT messages, to include a cloud based Shadow of our Thing, the BME680 sensor. That is, we will not exemplify all of the Shadow functionality, rather we will get started using Shadows with an example that is as simple in functionality as possible. Once we are done with this case, we will have come far enough to start understanding how advanced functions and applications work.<br>
-We will try to do something like this
+On its own, a Thing Shadow might not look like much or even that useful. It certainly is an extra layer of complexity on top of publishing and subscribing. Shadows are, however, the foundation on which we can build Digital Twins and are an almost neccessity for applications that run machine learning models on IoT data.<br><br>
+So what exactly is the Shadow of a thing? In a moment we will dive into the technical details, but we can think of a Shadow as an entity that has the same abilities as a thing, it can send and receive messages, except that it is always an exact copy of the latest state of the thing. If the thing goes offline, the Shadow will still be there reporting the latest state. A Shadow is purely a software construct, there is no hardware, but it can live in the cloud, on the edge, or both.<br><br>
+Before we get started, it should be said that the [documentation](https://docs.aws.amazon.com/iot/latest/developerguide/iot-device-shadows.html "AWS thing shadow docs") for Shadows is quite good and definitely worth a read. Instead of repeating the documentation, we will expand on the previous demonstrations of [publishing](publishing.md "Publishing demonstration") and [subscribing](pubsub.md "pub/sub demonstration") with AWS IoT and MQTT messages, to include a cloud based Shadow of our thing, the BME680 sensor. That is, we will not exemplify all of the Shadow functionality, rather we will get started using Shadows with an example that is as simple in functionality as possible. Once we are done with this case, we will have come far enough to start understanding how advanced functions and applications work.<br><br>
+We will try to do build a thing that does something along the lines of
 ```
 Prepare the sensor
 Set up connection to AWS
 while true
     get a sensor reading
-    update the shadow
+    update the Shadow
     publish the reading
-    confirm that the shadow was updated
+    confirm that the Shadow was updated
 ```
-We will then look at the shadow document using the AWS IoT test functionality.
+We will then look at the Shadow document using the AWS IoT test functionality.
 <div align="center">
 	<img width=500 src="images/shadow_architecture.png" alt="iot setup">
 	<br>
@@ -20,7 +20,7 @@ We will then look at the shadow document using the AWS IoT test functionality.
 </div>
 
 # Basics of Device Shadows
-The shadow of a thing is a JSON document containing predetermined fields. All devices registered in AWS IoT are given the Shadow functionality by default, though the JSON is only generated the first time the Shadow is updated. An example of a shadow document could be
+The Shadow of a thing is a JSON document containing predetermined fields. All devices registered in AWS IoT are given the Shadow functionality by default, though the JSON is only generated the first time the Shadow is updated. An example of a Shadow document could be
 ```json
 {
     "state":{
@@ -65,13 +65,13 @@ We will not use the desired field for this demonstration. We will just report th
     }
 }
 ```
-The `metadata`field holds information on when each of the values in the `state` field were updated. The field follows the same schema as `state` and the information is given as a UTC timestamp, representing when the value was last updated.<br><br>
-The `version` field is a super useful feature. It is an integer that increases every time an update is made to the document, allowing applications and device to know whether their local copy is the latest.<br><br>
+The `metadata` field holds information on when each of the values in the `state` field were updated. The field follows the same schema as `state` and the information is given as a UTC timestamp, representing when the value was last updated.<br><br>
+The `version` field is a super useful feature. It is an integer that increases every time an update is made to the document, allowing applications and devices to know whether their local copy is the latest.<br><br>
 The `timestamp` field indicates the UTC timestamp of when the update was transmitted from AWS IoT.<br><br>
-Fields that are set to `Null` are deleted from the shadow document rather than reporting the `Null`.<br><br>
-There are few additional features in shadow document and they are neatly described in the [developer guide](https://docs.aws.amazon.com/iot/latest/developerguide/device-shadow-document.html "Shadow document developer guide"). For now, we have all we need to get started.
+Fields that are set to `Null` are deleted from the Shadow document rather than reporting the `Null`.<br><br>
+There are few additional features in Shadow document and they are neatly described in the [developer guide](https://docs.aws.amazon.com/iot/latest/developerguide/device-shadow-document.html "Shadow document developer guide"). For now, we have all we need to get started.
 ## Update a Device Shadow
-Updating the shadow of a device is done by sending a message to a specific topic. The topic is in the format `$aws/things/yourDevice/shadow/update` and depends on the name of the device registered in AWS IoT. If our device was called 'factory3Airflow' then the topic would be `$aws/things/factory3Airflow/shadow/update`.<br>
+Updating the Shadow of a device is done by sending a message to a specific topic. The topic is in the format `$aws/things/yourDevice/shadow/update` and depends on the name of the device registered in AWS IoT. If our device was called 'factory3Airflow' then the topic would be `$aws/things/factory3Airflow/shadow/update`.<br>
 The update message might look something like this
 ```json
 {
@@ -82,7 +82,7 @@ The update message might look something like this
     }
 } 
 ```
-Coding such a flow is quite similar to what we did for [publishing](publishing.md "publishing case"), except the topic is a bit more elaborate. Assuming that the client ID is the same as the device name, we can configure a connection and start updating the shadow like this:
+Coding such a flow is quite similar to what we did for [publishing](publishing.md "publishing case"), except the topic is a bit more elaborate. Assuming that the client ID is the same as the device name, we can configure a connection and start updating the Shadow like this:
 ```python
 # Define neccessary topics
 topic_update = "$aws/things/" + clientId + "/shadow/update"
@@ -90,13 +90,13 @@ topic_update = "$aws/things/" + clientId + "/shadow/update"
 # Configure connection to AWS IoT
 # ...
 
-# Keep updating the shadow on an infinite loop
+# Keep updating the Shadow on an infinite loop
 while True:
     message = {}
     temperature = get_sensor_reading()
     message["state"] = { "reported" : {"temperature" : temperature } }
     messageJson = json.dumps(message)
-    # Update the shadow
+    # Update the Shadow
     myAWSIoTMQTTClient.publish(topic_update, messageJson, 1)
     time.sleep(30)
 ```
@@ -131,8 +131,8 @@ myAWSIoTMQTTClient.subscribe(topic_update + "/accepted", 1, callback_update_acce
 myAWSIoTMQTTClient.subscribe(topic_update + "/rejected", 1, callback_update_rejected)
 ```
 ## Policies for Shadows
-Before we move on to more shadow related topics, we should take a look at the policies needed to allow devices and applications to utilise these special topics. Once again, the documentation is quite substantial and even provides [specific examples](https://docs.aws.amazon.com/iot/latest/developerguide/device-shadow-mqtt.html "shadow policy examples") for policies related to shadow interaction. Here we will focus on constructing an example.<br><br>
-Imagine we have a device registered with the name my_sensor in AWS IoT. We would like to give the device access to establish a connection with AWS IoT, publish readings to the topic my_sensor/reading, update its shadow, and subscribe to the accepted and rejected responses generated on shadow update.<br>
+Before we move on to more Shadow related topics, we should take a look at the policies needed to allow devices and applications to utilise these special topics. Once again, the documentation is quite substantial and even provides [specific examples](https://docs.aws.amazon.com/iot/latest/developerguide/device-shadow-mqtt.html "Shadow policy examples") for policies related to Shadow interaction. Here we will focus on constructing an example.<br><br>
+Imagine we have a device registered with the name `my_sensor` in AWS IoT. We would like to give the device access to establish a connection with AWS IoT, publish readings to the topic `my_sensor/reading`, update its Shadow, and subscribe to the accepted and rejected responses generated on Shadow update.<br>
 We already know how to construct statements to allow connection and publishing.
 ```json
 {
@@ -154,7 +154,7 @@ We already know how to construct statements to allow connection and publishing.
   ]
 }
 ```
-To allow the desired shadow interactions, we will add another resource to the publish action, mentioning the topic `$aws/things/my_sensor/shadow/update`:<br>
+To allow the desired Shadow interactions, we will add another resource to the publish action, mentioning the topic `$aws/things/my_sensor/shadow/update`:<br>
 ```json
 {
   "Statement": [
@@ -192,7 +192,7 @@ To allow subscription we will add subscription and receive actions for two resou
   ]
 }
 ```
-Given that the two subscription topics have the same root and that there are more update/ topics to subsrcibe to, it is tempting to add something along the lines of `$aws/things/my_sensor/shadow/update/*`, giving a wildcard for anything below the update root. While this would indeed work as intended now, AWS reserves the right to add additional reserved topics to the existing structure. If we were to use a policy with this type of wildcard, we thus risk allowing access to future topics causing unintended behaviour or information breaches. Therefore AWS discourages the use of wildcards in this way.<br>
+Given that the two subscription topics have the same root and that there are more `update/` topics to subsrcibe to, it is tempting to add something along the lines of `$aws/things/my_sensor/shadow/update/*`, giving a wildcard for anything below the update root. While this would indeed work as intended now, AWS reserves the right to add additional reserved topics to the existing structure. If we were to use a policy with this type of wildcard, we thus risk allowing access to future topics causing unintended behaviour or information breaches. Therefore AWS discourages the use of wildcards in this way.<br>
 Our final policy looks like this:
 ```json
 {
@@ -233,7 +233,7 @@ Our final policy looks like this:
 }
 ```
 # Simple Shadow Updating
-Now we have everything we need to build a full demonstration of shadow interaction. We know that we can structure the interaction in exactly the same way as with regular publishing and subscribing but with two key differences. The first is that we will publish and subscribe to the specific shadow topics. The second is that our published message follows the shadow document schema. Here is an example; We can have our callback functions do whatever we want, but I just wrote out some simple print statements:
+Now we have everything we need to build a full demonstration of Shadow interaction. We know that we can structure the interaction in exactly the same way as with regular publishing and subscribing but with two key differences. The first is that we will publish and subscribe to the specific Shadow topics. The second is that our published message follows the Shadow document schema. Here is an example; We can have our callback functions do whatever we want, but I just wrote out some simple print statements:
 ```python
 # Define topic for updates
 topic_update = "$aws/things/" + clientId + "/shadow/update"
@@ -269,15 +269,15 @@ while True:
         temperature = None
     message["state"] = { "reported" : {"temperature" : temperature } }
     messageJson = json.dumps(message)
-    # Update the shadow
+    # Update the Shadow
     myAWSIoTMQTTClient.publish(topic_update, messageJson, 1)
     time.sleep(15)
 ```
-The full working script is [here](example_scripts/shadow.py "shadow example"). Remember that the clientID is assumed to be the name of the thing. I registered a thing called my_sensor in AWS IoT and gave its certificate a policy like the one we developed above. Then I ran this script on my Raspberry Pi with the BME680 sensor. Like this:
+The full working script is [here](example_scripts/shadow.py "Shadow example"). Remember that the clientID is assumed to be the name of the thing. We could register a thing called `my_sensor` in AWS IoT and give its certificate a policy like the one we developed above. Then we can run this script on our Raspberry Pi with the BME680 sensor. Like this:
 ```bash
 python3 shadow.py -e <your aws iot endpoint> -r <file containing root certificate> -c <file containing device certificate> -k <file containing private key> -id <a client ID>
 ```
-With this we are publishing the latest sensor readings directly to the shadow and then regurgitating the message generated when the update is accepted or rejected. When it works, the output should look something like this:
+With this, we are publishing the latest sensor readings directly to the Shadow and then regurgitating the message generated when the update is accepted or rejected. When it works, the output should look something like this:
 ```
 Got an update, on the topic:
 $aws/things/my_sensor/shadow/update/accepted
@@ -286,31 +286,31 @@ b'{"state":{"reported":{"temperature":35.48}},"metadata":{"reported":{"temperatu
 ```
 If your setup is not working, make sure to check exactly which component is failing. If you are getting errors in the connection part, check whether your keys are for the right certificate and whether the certificate is activated. If you are getting an error in the subscription or publishing parts, check whether your policy gives the right accesses. Finally, you should not get any messages on the `/update/rejected` subject. If you do, one possible reason is that the message follows a wrong format.<br><br>
 # More Shadow Topics
-Congratulations! You now know how to set up a shadow for your device and you are ready to start building the foundation for your digital twin application. There are, however, a couple of extra details that you might want to know about before you start building the application.<br>
+Congratulations! You now know how to set up a Shadow for your device and you are ready to start building the foundation for your digital twin application. There are, however, a couple of extra details that you might want to know about before you start building the application.<br>
 ## Get the Shadow
 If our application just listens to the `/update/accepted` we will have achieved nothing more by going through the Shadow compared to just plain publishing. The real power of Shadows is in always having the latest reading from our device available, while decoupling the device and the application.<br>
-Now that we are having the device update its Shadow each time a new reading is available, we can start having our application access that Shadow document whenever it needs it. We can always view the shadow document of our thing by going to AWS IoT > Manage > Things, then selecting our device and go to the 'Shadow' tab
+Now that we are having the device update its Shadow each time a new reading is available, we can start having our application access that Shadow document whenever it needs it. We can always view the Shadow document of our thing by going to AWS IoT > Manage > Things, then selecting our device and go to the 'Shadow' tab
 <div align="center">
-	<img width=500 src="images/aws_shadow_document.png" alt="shadow document">
+	<img width=500 src="images/aws_shadow_document.png" alt="Shadow document">
   <br>
 </div>
 
 This is nice for demonstration and debugging purposes, but our application needs to access the document programatically. The MQTT protocol does not do requests, and operates using the publish and subscribe model only. So the way for our application to request the Shadow document on demand is to publish a request to a specific topic and subscribe to a response topic. Note that there is an alternative based on a REST API, which we will discuss in a [section](shadow.md#in-production) below, but for now we will stick to the MQTT way.
-By sending an empty request, `{}`, to the topic `$aws/things/yourDevice/shadow/get` our application can trigger the shadow to publish a copy of the current shadow document to the subject `$aws/things/yourDevice/shadow/get/accepted`. The easiest way to see it in action is by subscribing to the `$aws/things/yourDevice/shadow/get/#` topicfilter in the test console and then publish an empty message to `/get`. I gave it a try here
+By sending an empty request, `{}`, to the topic `$aws/things/yourDevice/shadow/get` our application can trigger the Shadow to publish a copy of the current Shadow document to the subject `$aws/things/yourDevice/shadow/get/accepted`. The easiest way to see it in action is by subscribing to the `$aws/things/yourDevice/shadow/get/#` topicfilter in the test console and then publish an empty message to `/get`. I gave it a try here
 <div align="center">
-	<img width=500 src="images/aws_shadow_get.png" alt="shadow get">
+	<img width=500 src="images/aws_shadow_get.png" alt="Shadow get">
   <br>
 </div>
 
 This is also an excellent opportunity to explore what happens, when we do something unexpected. Here I published a string instead of a JSON, for instance:
 <div align="center">
-	<img width=500 src="images/aws_shadow_get_rejected.png" alt="shadow get">
+	<img width=500 src="images/aws_shadow_get_rejected.png" alt="Shadow get">
   <br>
 </div>
 
 The `/get` topic also has a `/rejected` subtopic that gives helpful error messages when requests are rejected.
 ## Delete the Shadow
-You might have guessed this next topic group. We now know how to update and get the shadow document. Now we just need to know how to delete it. By publishing an empty message to the topic `$aws/things/yourDevice/shadow/delete` we delete the shadow document for `yourDevice`. On successful deletion, a confirmation is published to `/delete/accepted` and a message is published to `/delete/rejected` otherwise. Let us try to delete the shadow, then try to get, and see what happens:
+We now know how to update and get the Shadow document. Now we just need to know how to delete it. By publishing an empty message to the topic `$aws/things/yourDevice/shadow/delete` we delete the Shadow document for `yourDevice`. On successful deletion, a confirmation is published to `/delete/accepted` and a message is published to `/delete/rejected` otherwise. Let us try to delete the Shadow, then try to get it, and see what happens:
 <div align="center">
 	<img width=500 src="images/aws_shadow_delete.png" alt="shadow delete">
   <br>
@@ -321,10 +321,10 @@ You might have guessed this next topic group. We now know how to update and get 
   <br>
 </div>
 
-We get an error message because there is no shadow document to get.
+We get an error message because there is no Shadow document to get.
 ## Shadow MQTT Topics Summary
-In summary, all shadow interaction topics are prefixed with `$aws/things/yourDevice/shadow` where 'yourDevice' is the ID of our thing as registered in AWS IoT. We interact with the shadow in three ways: we can update the shadow, get the shadow, or delete the shadow. These functions are triggered when messages are published to the topics `/update`, `/get`, or `/delete` repectively. When the actions succeed, messages are published to the `/accepted` subtopic. When the actions fail, messages are published to the `/rejected` subtopic with useful information for debugging.<br>
-Not covered in this demonstration are the `/update/document` and `/update/delta` topics. You can read more about all shadow interaction topics and find more example policies in the [docs](https://docs.aws.amazon.com/iot/latest/developerguide/device-shadow-mqtt.html "Shadow interaction docs").
+In summary, all Shadow interaction topics are prefixed with `$aws/things/yourDevice/shadow` where `yourDevice` is the ID of our thing as registered in AWS IoT. We interact with the Shadow in three ways: we can update the Shadow, get the Shadow, or delete the Shadow. These functions are triggered when messages are published to the topics `/update`, `/get`, or `/delete` repectively. When the actions succeed, messages are published to the `/accepted` subtopic. When the actions fail, messages are published to the `/rejected` subtopic with useful information for debugging.<br>
+Not covered in this demonstration are the `/update/document` and `/update/delta` topics. The [docs](https://docs.aws.amazon.com/iot/latest/developerguide/device-shadow-mqtt.html "Shadow interaction docs") have more about Shadow interaction topics along with sample example policies.
 ## The Shadow Client
 Depending on the apllication and how we manage topics, it might be easier to use the special Shadow client that is included in the SDK. The Shadow client, once configured, takes care of publishing and subscribing to the right topics. That is, it does exactly what we did above but with fewer lines of code and without us having to state the topics explicitly.<br>
 The client is configured and connected like any other MQTT client:
@@ -343,7 +343,7 @@ Now we create a handler, that takes care of the publishing and subscribing. All 
 ```python
 # Handles publishing and subscribing to Shadow topics
 # Persists subscription
-deviceShadowHandler = myAWSIoTMQTTShadowClient.createShadowHandlerWithName(clientIDFOr d, True)
+deviceShadowHandler = myAWSIoTMQTTShadowClient.createShadowHandlerWithName(clientID, True)
 ```
 The handler will subscribe to the response topics from the Shadow. By setting the second argument to True, we are telling the handler to persist the subscription, i.e. not close the subscription when a response is received. Depending on the application, it might be neccessary to close the subscription once a response is received. But since we only have one client interacting with the Shadow in our case, we can safely persist the subscription and avoid resubscribing every time we send an update.<br>
 As with every other subscription, we need to tell the client what to do when a message is received with a callback function. The callback function is provided to the handler when we perform an update, but before we get there we need to actually define a function. The callback function for a Shadow client looks a bit different from the callback functions we saw for regular subscribing. It has a `payload` object, which contains the Shadow document, assuming that the update is accepted. It then has a `responseStatus` string, which can be either `"timeout"`, `"accepted"`, or `"rejected"` depending on how the update event went. Finally there is a `token` which can be used to trace the request, but we will not discuss it here. Here is an example of a callback function for an update request.
@@ -387,4 +387,4 @@ The API is exposed at
 ```
 https://endpoint/things/yourDevice/shadow
 ```
-Where the `endpoint` is our custom AWS IoT endpoint and `yourDevice` is the name of our Thing as registered in AWS IoT. We can send regular Get, Update, and Delete HTTP requests to this endpoint and get, update, or delete the Shadow correspondingly. Note though that the entity sending the requests must have permissions to do so. This can be achieved with an IAM user with proper policies, but we will not dive into the details here.
+Where the `endpoint` is our custom AWS IoT endpoint and `yourDevice` is the name of our Thing as registered in AWS IoT. We can send regular Get, Update, and Delete HTTP requests to this endpoint and get, update, or delete the Shadow correspondingly. Note though that the entity sending the requests must have permissions to do so. This can be achieved with an IAM user with proper policies.

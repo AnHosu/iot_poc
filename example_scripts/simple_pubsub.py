@@ -16,20 +16,17 @@ from datetime import datetime
 
 ### Setup for my sensor
 import bme680
+import smbus2
 
 try:
-    sensor = bme680.BME680(bme680.I2C_ADDR_PRIMARY)
+    sensor = bme680.BME680(bme680.I2C_ADDR_PRIMARY,smbus2.SMBus(1))
 except IOError:
-    sensor = bme680.BME680(bme680.I2C_ADDR_SECONDARY)
+    sensor = bme680.BME680(bme680.I2C_ADDR_SECONDARY,smbus2.SMBus(1))
 
-# These oversampling settings can be tweaked to
-# change the balance between accuracy and noise in
-# the data.
 sensor.set_humidity_oversample(bme680.OS_2X)
 sensor.set_pressure_oversample(bme680.OS_4X)
 sensor.set_temperature_oversample(bme680.OS_8X)
 sensor.set_filter(bme680.FILTER_SIZE_3)
-
 ### Sensor stuff done
 
 # Read in command-line parameters
